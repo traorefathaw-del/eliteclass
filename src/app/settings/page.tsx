@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { createClient } from "@/utils/supabase";
+import { createClient} from "@/utils/supabase";
 import { Bell, Lock, Eye, Globe, Trash2, Loader2, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
