@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase";
 import { 
   LayoutDashboard, BookOpen, Library, 
   Users, UserCircle, Settings, LogOut, Terminal,
-  FlaskConical 
+  FlaskConical, Dumbbell 
 } from "lucide-react";
 
 const menuItems = [
@@ -15,6 +15,11 @@ const menuItems = [
     icon: <FlaskConical size={20} />, 
     label: "Elite Lab", 
     href: "/lab" 
+  },
+  { 
+    icon: <Dumbbell size={20} />, 
+    label: "Exercices", 
+    href: "/exercice" // Changé ici : "/exercice" sans le 's' pour correspondre à ton dossier
   },
   { icon: <Library size={20} />, label: "Bibliothèque", href: "/library" },
   { icon: <Users size={20} />, label: "Communauté", href: "/forum" },
@@ -34,19 +39,19 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 h-screen bg-[#0a0f1a] border-r border-white/5 flex flex-col p-6 sticky top-0 selection:bg-[#22d3ee]/30">
+    <aside className="w-64 h-screen bg-obsidian border-r border-white/5 flex flex-col p-6 sticky top-0 selection:bg-cyan/30">
       {/* LOGO SECTION */}
       <div className="flex items-center gap-3 mb-12 px-2">
-        <div className="w-8 h-8 bg-[#22d3ee] rounded-lg flex items-center justify-center shadow-lg shadow-[#22d3ee]/20">
-          <Terminal size={18} className="text-[#0a0f1a]" />
+        <div className="w-8 h-8 bg-cyan rounded-lg flex items-center justify-center shadow-lg shadow-cyan/20">
+          <Terminal size={18} className="text-obsidian" />
         </div>
         <span className="text-lg font-black italic tracking-tighter text-white uppercase font-sans">
-          Elite<span className="text-[#22d3ee]">Class</span>
+          Elite<span className="text-cyan">Class</span>
         </span>
       </div>
 
       {/* NAVIGATION SECTION */}
-      <nav className="flex-1 space-y-1.5">
+      <nav className="flex-1 space-y-1.5 overflow-y-auto pr-2 custom-scrollbar">
         {menuItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           
@@ -56,11 +61,11 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all font-black text-[10px] uppercase tracking-[0.15em] group ${
                 isActive 
-                  ? "bg-[#22d3ee] text-[#0a0f1a] shadow-lg shadow-[#22d3ee]/10" 
+                  ? "bg-cyan text-obsidian shadow-lg shadow-cyan/10" 
                   : "text-slate-500 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <span className={`transition-colors ${isActive ? "text-[#0a0f1a]" : "text-slate-500 group-hover:text-[#22d3ee]"}`}>
+              <span className={`transition-colors ${isActive ? "text-obsidian" : "text-slate-500 group-hover:text-cyan"}`}>
                 {item.icon}
               </span>
               {item.label}
@@ -70,13 +75,15 @@ export default function Sidebar() {
       </nav>
 
       {/* FOOTER / SIGNOUT */}
-      <button 
-        onClick={handleSignOut}
-        className="mt-auto flex items-center gap-4 px-4 py-4 rounded-2xl text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-all font-black text-[10px] uppercase tracking-widest group"
-      >
-        <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
-        Déconnexion
-      </button>
+      <div className="pt-4 mt-auto border-t border-white/5">
+        <button 
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-red-500/70 hover:text-red-500 hover:bg-red-500/10 transition-all font-black text-[10px] uppercase tracking-widest group"
+        >
+          <LogOut size={20} className="group-hover:-translate-x-1 transition-transform" />
+          Déconnexion
+        </button>
+      </div>
     </aside>
   );
 }
