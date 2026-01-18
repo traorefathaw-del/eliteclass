@@ -14,10 +14,11 @@ export default function ExercicePage() {
 
   const handleGenerate = async () => {
     setLoading(true);
-    // Ta clé API fonctionnelle
-    const API_KEY = "AIzaSyCkzqjsOC4-eK6LD86bf9tPl4EjPdCv9-8";
     
-    // CHANGEMENT : On passe sur gemini-2.5-flash (le plus stable sur ton compte)
+    // Récupération de la clé depuis .env.local
+    const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    
+    // Endpoint utilisant gemini-2.5-flash (validé sur ton compte)
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
     const prompt = `Génère un exercice de programmation.
@@ -46,7 +47,8 @@ export default function ExercicePage() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error?.message || "Erreur de communication");
+        // C'est ici que l'erreur "API key not valid" est captée
+        throw new Error(data.error?.message || "Clé API manquante ou invalide");
       }
 
       const textResponse = data.candidates[0].content.parts[0].text;
@@ -54,7 +56,7 @@ export default function ExercicePage() {
 
     } catch (error: any) {
       console.error("Erreur:", error);
-      alert("Tentative avec Gemini 2.5 : " + error.message);
+      alert("Erreur Système: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -71,13 +73,13 @@ export default function ExercicePage() {
               <Dumbbell size={20} className="animate-pulse" />
               <span className="text-[10px] font-black uppercase tracking-[0.4em]">Elite Next-Gen 3.0</span>
             </div>
-            <h1 className="text-6xl font-black italic uppercase tracking-tighter">
+            <h1 className="text-6xl font-black italic uppercase tracking-tighter leading-none">
               Forge<span className="text-cyan-400">.</span>
             </h1>
           </motion.div>
           <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-2 backdrop-blur-md">
             <Zap size={16} className="text-yellow-500 fill-yellow-500" />
-            <span className="font-black italic text-xl">ACTIF</span>
+            <span className="font-black italic text-xl uppercase tracking-widest">ACTIF</span>
           </div>
         </header>
 
@@ -112,7 +114,7 @@ export default function ExercicePage() {
                 disabled={loading}
                 className="w-full h-[56px] bg-gradient-to-r from-cyan-400 to-blue-600 text-[#0a0f1a] rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all hover:shadow-[0_0_20px_rgba(34,211,238,0.3)] disabled:opacity-50 active:scale-95"
              >
-                {loading ? <Loader2 className="animate-spin" size={20} /> : <><Sparkles size={18} /> Forger via 2.5 Flash</>}
+                {loading ? <Loader2 className="animate-spin" size={20} /> : <><Sparkles size={18} /> Forger l'exercice</>}
              </button>
           </div>
         </section>
@@ -139,7 +141,11 @@ export default function ExercicePage() {
                 </div>
                 <div className="p-8 bg-white/5 border-t border-white/5 flex justify-between items-center">
                    <span className="text-slate-500 text-[9px] uppercase font-bold tracking-widest italic">Ready for integration</span>
-                   <Link href="/lab" className="flex items-center gap-3 px-8 py-4 bg-cyan-400 text-[#0a0f1a] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all">
+                   <Link 
+                      href="/lab" 
+                      onClick={() => localStorage.setItem("currentExercise", JSON.stringify(exercice))}
+                      className="flex items-center gap-3 px-8 py-4 bg-cyan-400 text-[#0a0f1a] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg"
+                   >
                       Lancer l'IDE <ChevronRight size={16} />
                    </Link>
                 </div>
