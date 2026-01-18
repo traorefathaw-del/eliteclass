@@ -123,12 +123,12 @@ export default function EliteLabsUniversalIDE() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans overflow-hidden">
+    <div className="min-h-screen bg-[#0a0f1a] text-white flex flex-col font-sans overflow-hidden">
       {/* HEADER PROFESSIONNEL */}
-      <nav className="p-4 border-b border-white/5 flex items-center justify-between bg-slate-950">
+      <nav className="p-4 border-b border-white/5 flex items-center justify-between bg-[#0a0f1a]">
         <div className="flex items-center gap-4">
           <Link href="/"><ArrowLeft size={20} className="text-slate-400 hover:text-white"/></Link>
-          <h1 className="font-black italic text-xl uppercase tracking-tighter">Elite<span className="text-blue-500">.</span>Labs</h1>
+          <h1 className="font-black italic text-xl uppercase tracking-tighter">Elite<span className="text-[#22d3ee]">.</span>Labs</h1>
         </div>
 
         <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
@@ -140,7 +140,7 @@ export default function EliteLabsUniversalIDE() {
                   setCode(STARTER_CODE[l as keyof typeof STARTER_CODE]); 
                   setOutput([]); 
                 }}
-                className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${selectedLang === l ? "bg-blue-600 text-white" : "text-slate-500 hover:text-slate-300"}`}
+                className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${selectedLang === l ? "bg-[#22d3ee] text-[#0a0f1a]" : "text-slate-500 hover:text-slate-300"}`}
               >
                 {l}
               </button>
@@ -156,7 +156,7 @@ export default function EliteLabsUniversalIDE() {
         {/* ÉDITEUR */}
         <div className="flex-1 flex flex-col border-r border-white/5">
           <div className="p-3 bg-slate-900/30 border-b border-white/5 flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">
-            <Code2 size={14} className="text-blue-500"/> workspace / main.{selectedLang === 'c' ? 'c' : selectedLang === 'python' ? 'py' : 'js'}
+            <Code2 size={14} className="text-[#22d3ee]"/> workspace / main.{selectedLang === 'c' ? 'c' : selectedLang === 'python' ? 'py' : 'js'}
           </div>
           <Editor 
             height="100%" 

@@ -37,26 +37,27 @@ export default function VerifyOTP() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-slate-950 border border-white/5 p-10 rounded-[3rem] text-center relative overflow-hidden">
-        <div className="absolute -top-10 -left-10 w-32 h-32 bg-blue-600/10 blur-[60px]" />
+    <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center p-6 font-sans selection:bg-[#22d3ee]/30">
+      <div className="w-full max-w-md bg-[#111827] border border-white/5 p-10 rounded-[3rem] text-center relative overflow-hidden shadow-2xl">
+        {/* Glow Effect */}
+        <div className="absolute -top-10 -left-10 w-32 h-32 bg-[#22d3ee]/10 blur-[60px]" />
         
-        <div className="w-20 h-20 bg-blue-600/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-blue-500/20">
-          <ShieldCheck size={40} className="text-blue-500" />
+        <div className="w-20 h-20 bg-[#22d3ee]/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-[#22d3ee]/20">
+          <ShieldCheck size={40} className="text-[#22d3ee]" />
         </div>
 
-        <h1 className="text-3xl font-black italic uppercase mb-2">Vérification</h1>
+        <h1 className="text-3xl font-black italic uppercase mb-2 text-white tracking-tighter">Vérification</h1>
         <p className="text-slate-500 text-xs mb-8 font-mono">
-          // Un code a été envoyé à <br/><span className="text-blue-400">{email}</span>
+          // Un code a été envoyé à <br/><span className="text-[#22d3ee] font-bold">{email}</span>
         </p>
 
-        <form onSubmit={handleVerify} className="space-y-6">
+        <form onSubmit={handleVerify} className="space-y-6 text-white">
           <input 
             type="text" 
-            placeholder="Code à 6 chiffres" 
+            placeholder="000000" 
             maxLength={6}
             required
-            className="w-full bg-slate-900 border border-white/10 rounded-2xl py-5 text-center text-2xl font-black tracking-[0.5em] outline-none focus:border-blue-500 transition-all"
+            className="w-full bg-[#0a0f1a] border border-white/10 rounded-2xl py-5 text-center text-2xl font-black tracking-[0.5em] outline-none focus:border-[#22d3ee] transition-all placeholder:text-slate-800"
             onChange={(e) => setOtp(e.target.value)}
           />
 
@@ -64,9 +65,9 @@ export default function VerifyOTP() {
 
           <button 
             disabled={loading}
-            className="w-full py-5 bg-blue-600 hover:bg-blue-400 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all shadow-xl shadow-blue-600/20"
+            className="w-full py-5 bg-[#22d3ee] hover:brightness-110 text-[#0a0f1a] rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-all shadow-xl shadow-[#22d3ee]/10 disabled:opacity-50 disabled:bg-slate-800"
           >
-            {loading ? <RefreshCw className="animate-spin" /> : <>Confirmer l'accès <ArrowRight size={16}/></>}
+            {loading ? <RefreshCw className="animate-spin" size={18} /> : <>Confirmer l'accès <ArrowRight size={18}/></>}
           </button>
         </form>
       </div>

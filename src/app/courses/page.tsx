@@ -96,12 +96,12 @@ export default function EliteLabsFinal() {
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white flex flex-col font-sans overflow-hidden">
+    <div className="min-h-screen bg-[#0a0f1a] text-white flex flex-col font-sans overflow-hidden">
       {/* HEADER */}
-      <header className="p-4 border-b border-white/5 flex items-center justify-between bg-slate-950/80 backdrop-blur-xl">
+      <header className="p-4 border-b border-white/5 flex items-center justify-between bg-[#0a0f1a]/80 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <Link href="/"><ArrowLeft size={20} className="text-slate-400 hover:text-white transition-colors"/></Link>
-          <h1 className="font-black italic text-xl uppercase tracking-tighter">Elite<span className="text-blue-500">.</span>Labs</h1>
+          <h1 className="font-black italic text-xl uppercase tracking-tighter">Elite<span className="text-cyan-400">.</span>Labs</h1>
         </div>
         <div className="flex items-center gap-2 bg-emerald-500/10 px-4 py-1.5 rounded-full border border-emerald-500/20">
           <CheckCircle2 size={14} className="text-emerald-500 animate-pulse"/>
@@ -111,7 +111,7 @@ export default function EliteLabsFinal() {
 
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
         {/* SECTION GAUCHE : VIDÉO & PLAYLIST */}
-        <div className="w-full lg:w-1/2 p-6 overflow-y-auto border-r border-white/5 bg-slate-950/20">
+        <div className="w-full lg:w-1/2 p-6 overflow-y-auto border-r border-white/5 bg-[#0a0f1a]/20">
           <div className="aspect-video bg-black rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl mb-6">
             <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${activeVideo.id}`} allowFullScreen />
           </div>
@@ -121,7 +121,7 @@ export default function EliteLabsFinal() {
             {(["javascript", "python", "c"] as const).map((l) => (
               <button 
                 key={l} onClick={() => changeLang(l)}
-                className={`py-4 rounded-2xl border text-[11px] font-black uppercase transition-all ${selectedLang === l ? "bg-blue-600 border-blue-400 shadow-xl shadow-blue-600/20" : "bg-white/5 border-white/5 text-slate-500 hover:bg-white/10"}`}
+                className={`py-4 rounded-2xl border text-[11px] font-black uppercase transition-all ${selectedLang === l ? "bg-cyan-400 text-[#0a0f1a] border-cyan-400 shadow-xl shadow-cyan-400/20" : "bg-white/5 border-white/5 text-slate-500 hover:bg-white/10"}`}
               >
                 {l}
               </button>
@@ -131,7 +131,7 @@ export default function EliteLabsFinal() {
           <div className="space-y-3">
             <h3 className="text-[10px] font-black uppercase text-slate-600 tracking-[0.3em] mb-4">Cours recommandés</h3>
             {MASTERCLASS_DB.map((v) => (
-              <button key={v.id} onClick={() => setActiveVideo(v)} className={`w-full flex items-center gap-4 p-3 rounded-2xl border transition-all ${activeVideo.id === v.id ? "bg-blue-600/10 border-blue-500/50" : "bg-white/5 border-transparent hover:bg-white/10"}`}>
+              <button key={v.id} onClick={() => setActiveVideo(v)} className={`w-full flex items-center gap-4 p-3 rounded-2xl border transition-all ${activeVideo.id === v.id ? "bg-cyan-400/10 border-cyan-400/50" : "bg-white/5 border-transparent hover:bg-white/10"}`}>
                 <img src={v.thumbnail} className="w-20 rounded-xl" alt="thumb" />
                 <div className="text-left font-bold text-[11px] uppercase italic text-slate-300">{v.title}</div>
               </button>
@@ -141,12 +141,12 @@ export default function EliteLabsFinal() {
 
         {/* SECTION DROITE : L'IDE STRICT */}
         <div className="w-full lg:w-1/2 flex flex-col bg-black">
-          <div className="p-4 border-b border-white/5 flex justify-between items-center bg-zinc-950/50">
+          <div className="p-4 border-b border-white/5 flex justify-between items-center bg-[#0a0f1a]/50">
             <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">Environnement : {selectedLang} 2026.1</span>
             </div>
-            <button onClick={handleRun} className="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-2xl font-black text-[11px] uppercase flex items-center gap-3 transition-all active:scale-95 shadow-lg shadow-blue-600/20">
+            <button onClick={handleRun} className="bg-cyan-400 hover:bg-cyan-300 text-[#0a0f1a] px-8 py-3 rounded-2xl font-black text-[11px] uppercase flex items-center gap-3 transition-all active:scale-95 shadow-lg shadow-cyan-400/20">
               <Play size={14} fill="currentColor"/> Compiler & Lancer
             </button>
           </div>
@@ -180,7 +180,7 @@ export default function EliteLabsFinal() {
                 <div key={i} className={`flex items-start gap-3 ${
                   line.type === 'error' ? 'text-red-500 bg-red-500/5 p-2 rounded border border-red-500/10 font-bold' : 
                   line.type === 'result' ? 'text-white bg-white/5 px-2 py-0.5 rounded' : 
-                  'text-blue-400 italic text-[11px]'
+                  'text-cyan-400 italic text-[11px]'
                 }`}>
                   <span className="opacity-20">{">"}</span>
                   <span className="whitespace-pre-wrap">{line.msg}</span>

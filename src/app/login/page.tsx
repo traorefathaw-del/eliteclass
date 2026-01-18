@@ -27,29 +27,28 @@ export default function LoginPage() {
       setError("Identifiants invalides. Vérifiez votre email et mot de passe.");
       setLoading(false);
     } else {
-      // Redirection immédiate vers le dashboard après succès
       router.push("/dashboard");
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 font-sans selection:bg-blue-500/30">
-      <div className="w-full max-w-lg bg-slate-950 border border-white/5 p-8 md:p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
+    <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center p-4 font-sans selection:bg-[#22d3ee]/30">
+      <div className="w-full max-w-lg bg-[#111827] border border-white/5 p-8 md:p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
         
         {/* Glow Effects */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-600/10 blur-[120px]" />
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-600/5 blur-[120px]" />
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-[#22d3ee]/10 blur-[120px]" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#22d3ee]/5 blur-[120px]" />
 
         <div className="relative z-10 text-white">
           <header className="mb-10 text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
-               <div className="p-3 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20">
-                  <KeyRound size={24}/>
+               <div className="p-3 bg-[#22d3ee] rounded-2xl shadow-xl shadow-[#22d3ee]/20">
+                  <KeyRound size={24} className="text-[#0a0f1a]"/>
                </div>
                <h1 className="text-3xl font-black italic uppercase tracking-tighter">Elite Access</h1>
             </div>
             <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.3em]">
-                // Authentification requise
+                
             </p>
           </header>
 
@@ -62,7 +61,7 @@ export default function LoginPage() {
                 <input 
                   type="email" required 
                   value={email}
-                  className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-500/50 text-sm transition-all focus:ring-1 ring-blue-500/20 text-white"
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all focus:ring-1 ring-[#22d3ee]/20 text-white"
                   placeholder=""
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -73,14 +72,14 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center px-4">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mot de passe</label>
-                <Link href="#" className="text-[9px] font-bold text-blue-500/50 hover:text-blue-500 transition-colors uppercase tracking-widest italic">Oublié ?</Link>
+                <Link href="#" className="text-[9px] font-bold text-[#22d3ee]/50 hover:text-[#22d3ee] transition-colors uppercase tracking-widest italic">Oublié ?</Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
                 <input 
                   type="password" required 
                   value={password}
-                  className="w-full bg-slate-900/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-blue-500/50 text-sm transition-all focus:ring-1 ring-blue-500/20 text-white"
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all focus:ring-1 ring-[#22d3ee]/20 text-white"
                   placeholder=""
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -96,7 +95,7 @@ export default function LoginPage() {
 
             <button 
               disabled={loading}
-              className="w-full py-5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-xl shadow-blue-600/20 group"
+              className="w-full py-5 bg-[#22d3ee] hover:bg-[#22d3ee]/90 text-[#0a0f1a] disabled:bg-slate-800 disabled:text-slate-500 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-xl shadow-[#22d3ee]/20 group"
             >
               {loading ? <Loader2 className="animate-spin" size={18} /> : (
                 <>Ouvrir la session <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" /></>
@@ -107,7 +106,7 @@ export default function LoginPage() {
           <footer className="mt-8 text-center flex flex-col gap-4">
             <div className="h-[1px] w-12 bg-white/10 mx-auto" />
             <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">
-              Pas encore membre ? <Link href="/signup" className="text-blue-500 hover:text-white ml-2 italic transition-colors">Créer un compte</Link>
+              Pas encore membre ? <Link href="/signup" className="text-[#22d3ee] hover:text-white ml-2 italic transition-colors">Créer un compte</Link>
             </p>
           </footer>
         </div>

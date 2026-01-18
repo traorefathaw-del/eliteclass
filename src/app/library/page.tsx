@@ -1,109 +1,140 @@
 "use client";
 import { useState, useEffect } from "react";
-import { FileText, Download, Search, Book, Code, Terminal, ExternalLink, Plus, Loader2, X } from "lucide-react";
-import { createClient } from "../../utils/supabase";
+import { Search, Plus, FileText, Download, X, UploadCloud, Loader2 } from "lucide-react";
+// On garde ton import tel quel
+import { createClient } from "../../utils/supabase"; 
 
 export default function LibraryElite() {
+  // CORRECTION : Initialisation indispensable pour éviter "supabase is not defined"
   const supabase = createClient();
+
+  // États techniques
   const [searchTerm, setSearchTerm] = useState("");
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   
-  // État pour le formulaire d'ajout (Admin seulement)
+  // États de la Modal d'ajout
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newDoc, setNewDoc] = useState({ title: "", type: "PDF", size: "", category: "", download_url: "" });
+  const [uploading, setUploading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [newDoc, setNewDoc] = useState({ title: "", category: "" });
 
   useEffect(() => {
-    fetchDocs();
-    checkUser();
+    const init = async () => {
+      // Vérification de la session utilisateur
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      await fetchDocs();
+    };
+    init();
   }, []);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-  };
 
   const fetchDocs = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("library").select("*").order("created_at", { ascending: false });
-    if (!error) setDocuments(data || []);
+    const { data, error } = await supabase
+      .from("library")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setDocuments(data);
     setLoading(false);
   };
 
-  const handleAddDocument = async () => {
-    const { error } = await supabase.from("library").insert([newDoc]);
-    if (!error) {
+  const handleUpload = async () => {
+    if (!file || !newDoc.title) return alert("Veuillez remplir le titre et choisir un fichier.");
+    
+    setUploading(true);
+    try {
+      const fileName = `${Date.now()}_${file.name.replace(/\s/g, "_")}`;
+      
+      // 1. Upload vers le Storage
+      const { error: storageError } = await supabase.storage
+        .from("documents")
+        .upload(fileName, file);
+
+      if (storageError) throw storageError;
+
+      // 2. URL publique et insertion Base de données
+      const { data: urlData } = supabase.storage.from("documents").getPublicUrl(fileName);
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2) + " MB";
+
+      const { error: dbError } = await supabase.from("library").insert([{
+        title: newDoc.title.toUpperCase(),
+        category: newDoc.category.toUpperCase() || "RESSOURCE",
+        size: sizeMB,
+        download_url: urlData.publicUrl,
+        type: "PDF"
+      }]);
+
+      if (dbError) throw dbError;
+
       setShowAddModal(false);
+      setFile(null);
       fetchDocs();
+      alert("Succès : Archive ajoutée !");
+    } catch (err: any) {
+      alert("Erreur : " + err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
-  const filteredDocs = documents.filter(doc => 
-    doc.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Vérification si vous êtes l'admin
+  // Sécurité Administrateur
   const isAdmin = user?.email === "traorefathaw@gmail.com";
 
   return (
-    <div className="min-h-screen bg-[#020617] text-white p-8 md:p-16 pt-24">
+    <div className="min-h-screen bg-[#0a0f1a] text-white p-6 md:p-12 pt-24 selection:bg-cyan-500/30">
       <div className="max-w-6xl mx-auto">
         
-        {/* EN-TÊTE */}
-        <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
-          <div>
-            <h1 className="text-6xl font-black italic tracking-tighter uppercase mb-4 leading-none">
-              Archives <span className="text-blue-600 not-italic font-sans">Elite</span>
-            </h1>
-            <p className="text-slate-500 font-mono text-[10px] tracking-[0.3em] uppercase">
-               {isAdmin ? "ADMINISTRATEUR CONNECTÉE" : "Répertoire central des connaissances"}
-            </p>
-          </div>
-          
-          <div className="flex gap-4 w-full md:w-auto">
+        {/* HEADER & BARRE DE RECHERCHE */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-16">
+          <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none">
+            Archives <span className="text-[#22d3ee] font-black">Elite</span>
+          </h1>
+
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            {/* Barre de recherche optimisée */}
             <div className="relative flex-1 md:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="text-slate-500" size={18} />
+              </div>
               <input 
                 type="text" 
-                placeholder="Rechercher..."
-                className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-blue-500 transition-all text-sm"
+                placeholder="RECHERCHER..."
+                className="w-full bg-slate-900/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-[11px] font-black tracking-widest outline-none focus:border-[#22d3ee]/50 transition-all placeholder:text-slate-600"
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+
+            {/* Bouton d'ajout */}
             {isAdmin && (
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="bg-blue-600 p-4 rounded-2xl hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20"
+                className="bg-[#22d3ee] text-[#0a0f1a] p-4 rounded-2xl hover:brightness-110 transition-all shadow-lg active:scale-95 shadow-[#22d3ee]/20"
               >
-                <Plus size={24} />
+                <Plus size={24} strokeWidth={3} />
               </button>
             )}
           </div>
         </div>
 
-        {/* GRILLE */}
+        {/* LISTE DES DOCUMENTS */}
         {loading ? (
-          <div className="flex justify-center py-20 opacity-20"><Loader2 className="animate-spin" size={40} /></div>
+          <div className="flex justify-center py-20 opacity-30"><Loader2 className="animate-spin text-[#22d3ee]" size={40} /></div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDocs.map((doc) => (
-              <div key={doc.id} className="group bg-slate-900/20 border border-white/5 p-8 rounded-[2.5rem] hover:border-blue-500/30 transition-all duration-500">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="p-4 bg-slate-950 rounded-2xl border border-white/5">
-                    {doc.category === "Système" ? <Terminal className="text-blue-400" /> : <FileText className="text-purple-400" />}
-                  </div>
-                  <span className="text-[9px] font-black px-3 py-1 bg-white/5 rounded-full text-slate-500 uppercase">{doc.type}</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {documents
+              .filter(d => d.title.toLowerCase().includes(searchTerm.toLowerCase()))
+              .map((doc) => (
+              <div key={doc.id} className="bg-slate-900/30 border border-white/5 p-8 rounded-[2.5rem] group hover:border-[#22d3ee]/30 transition-all">
+                <div className="flex justify-between mb-6">
+                  <div className="p-4 bg-[#0a0f1a] rounded-2xl border border-white/5"><FileText className="text-[#22d3ee]" /></div>
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">{doc.size}</span>
                 </div>
-                <h3 className="text-xl font-black mb-2 italic uppercase tracking-tighter leading-tight">{doc.title}</h3>
-                <div className="text-[10px] font-mono text-slate-600 mb-8 uppercase flex gap-3">
-                   <span>{doc.category}</span> <span>•</span> <span>{doc.size}</span>
-                </div>
-                <a 
-                  href={doc.download_url} 
-                  target="_blank"
-                  className="w-full py-4 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-blue-600 hover:text-white transition-all"
-                >
+                <h3 className="text-xl font-black italic uppercase mb-8 leading-tight h-14 overflow-hidden tracking-tighter">
+                  {doc.title}
+                </h3>
+                <a href={doc.download_url} target="_blank" className="w-full py-4 bg-white text-[#0a0f1a] rounded-2xl font-black text-[10px] uppercase flex justify-center items-center gap-2 hover:bg-[#22d3ee] hover:text-[#0a0f1a] transition-all shadow-lg">
                   <Download size={16} /> Télécharger
                 </a>
               </div>
@@ -111,21 +142,40 @@ export default function LibraryElite() {
           </div>
         )}
 
-        {/* MODAL AJOUT (VISIBLE UNIQUEMENT PAR VOUS) */}
+        {/* MODAL AJOUTER UN DOC */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-            <div className="bg-[#020617] border border-white/10 p-10 rounded-[3rem] max-w-md w-full relative">
-              <button onClick={() => setShowAddModal(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white"><X /></button>
-              <h2 className="text-3xl font-black italic uppercase mb-8">Ajouter un <span className="text-blue-500">Doc</span></h2>
+          <div className="fixed inset-0 bg-[#0a0f1a]/95 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
+            <div className="bg-[#111827] border border-white/10 p-8 md:p-12 rounded-[3rem] max-w-md w-full relative shadow-2xl">
+              <button onClick={() => setShowAddModal(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white transition-colors"><X /></button>
+              
+              <h2 className="text-3xl font-black italic uppercase mb-10 tracking-tighter">Ajouter un <span className="text-[#22d3ee]">Doc</span></h2>
+              
               <div className="space-y-4">
-                <input type="text" placeholder="TITRE" className="w-full bg-slate-900 border border-white/5 p-4 rounded-xl outline-none focus:border-blue-500 font-bold uppercase text-xs" onChange={e => setNewDoc({...newDoc, title: e.target.value})} />
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="TYPE (PDF...)" className="w-full bg-slate-900 border border-white/5 p-4 rounded-xl outline-none text-xs font-bold" onChange={e => setNewDoc({...newDoc, type: e.target.value})} />
-                  <input type="text" placeholder="TAILLE (2MB)" className="w-full bg-slate-900 border border-white/5 p-4 rounded-xl outline-none text-xs font-bold" onChange={e => setNewDoc({...newDoc, size: e.target.value})} />
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-500 uppercase ml-2">Titre</label>
+                  <input type="text" placeholder="EX: GUIDE CYBER SÉCURITÉ" className="w-full bg-[#0a0f1a] border border-white/5 p-4 rounded-2xl font-bold uppercase text-xs outline-none focus:border-[#22d3ee] transition-all" onChange={e => setNewDoc({...newDoc, title: e.target.value})} />
                 </div>
-                <input type="text" placeholder="CATÉGORIE" className="w-full bg-slate-900 border border-white/5 p-4 rounded-xl outline-none text-xs font-bold" onChange={e => setNewDoc({...newDoc, category: e.target.value})} />
-                <input type="text" placeholder="URL DE TÉLÉCHARGEMENT" className="w-full bg-slate-900 border border-white/5 p-4 rounded-xl outline-none text-xs font-bold" onChange={e => setNewDoc({...newDoc, download_url: e.target.value})} />
-                <button onClick={handleAddDocument} className="w-full py-5 bg-blue-600 rounded-2xl font-black uppercase text-xs tracking-widest">Enregistrer la ressource</button>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-500 uppercase ml-2">Catégorie</label>
+                  <input type="text" placeholder="EX: RÉSEAUX / DEV" className="w-full bg-[#0a0f1a] border border-white/5 p-4 rounded-2xl font-bold uppercase text-xs outline-none focus:border-[#22d3ee] transition-all" onChange={e => setNewDoc({...newDoc, category: e.target.value})} />
+                </div>
+                
+                <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/10 rounded-3xl cursor-pointer hover:bg-white/5 transition-all mt-4 group">
+                  <UploadCloud className="text-[#22d3ee] mb-2 group-hover:scale-110 transition-transform" size={30} />
+                  <span className="text-[10px] font-black uppercase text-slate-400 text-center px-4">
+                    {file ? file.name : "Glisser le fichier PDF ici (Max 20MB)"}
+                  </span>
+                  <input type="file" className="hidden" accept=".pdf" onChange={e => setFile(e.target.files ? e.target.files[0] : null)} />
+                </label>
+
+                <button 
+                  onClick={handleUpload} 
+                  disabled={uploading}
+                  className="w-full py-5 bg-[#22d3ee] text-[#0a0f1a] rounded-2xl font-black uppercase text-[11px] tracking-widest hover:brightness-110 transition-all flex justify-center items-center gap-2 mt-6 shadow-lg shadow-[#22d3ee]/10"
+                >
+                  {uploading ? <Loader2 className="animate-spin" size={18} /> : "Enregistrer la ressource"}
+                </button>
               </div>
             </div>
           </div>
