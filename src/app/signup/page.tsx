@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { createClient} from "@/utils/supabase";
-import { Mail, Lock, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, ShieldCheck, KeyRound } from "lucide-react";
 import Link from "next/link";
 
 export default function SignUpPage() {
@@ -10,6 +10,7 @@ export default function SignUpPage() {
     lastName: "",
     email: "",
     password: "",
+    accessKey: "", // Champ vide par défaut
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,24 +22,47 @@ export default function SignUpPage() {
     setLoading(true);
     setError(null);
     
-    const { data, error: signupError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        data: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          full_name: `${formData.firstName} ${formData.lastName}`,
-        },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const cleanKey = formData.accessKey.toUpperCase().trim();
 
-    if (signupError) {
-      setError(signupError.message);
-      setLoading(false);
-    } else {
+      // 1. Vérification de la clé dans la table access_keys
+      const { data: keyData, error: keyError } = await supabase
+        .from("access_keys")
+        .select("*")
+        .eq("code", cleanKey)
+        .eq("is_active", true)
+        .single();
+
+      if (keyError || !keyData) {
+        throw new Error("Clé d'accès invalide ou quota atteint.");
+      }
+
+      // 2. Création du compte utilisateur
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            full_name: `${formData.firstName} ${formData.lastName}`,
+          },
+        },
+      });
+
+      if (signupError) throw signupError;
+
+      // 3. Mise à jour du compteur d'utilisations de la clé
+      await supabase
+        .from("access_keys")
+        .update({ current_uses: keyData.current_uses + 1 })
+        .eq("id", keyData.id);
+
       window.location.href = `/verify?email=${encodeURIComponent(formData.email)}`;
+
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
     }
   };
 
@@ -56,14 +80,30 @@ export default function SignUpPage() {
                <div className="p-3 bg-[#22d3ee] rounded-2xl shadow-xl shadow-[#22d3ee]/20">
                   <ShieldCheck size={24} className="text-[#0a0f1a]"/>
                </div>
-               <h1 className="text-3xl font-black italic uppercase tracking-tighter">Elite Registry</h1>
+               <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">Elite Registry</h1>
             </div>
-            <p className="text-slate-500 font-mono text-[10px] uppercase tracking-[0.3em]">
-                
-            </p>
           </header>
 
           <form onSubmit={handleSignUp} className="space-y-6">
+            
+            {/* CHAMP CLÉ D'ACCÈS REQUISE (Vide avec icône) */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-black uppercase tracking-[0.2em] text-[#22d3ee] ml-4 italic">
+                Clé d'accès requise
+              </label>
+              <div className="relative group">
+                <KeyRound className="absolute left-6 top-1/2 -translate-y-1/2 text-[#22d3ee]/40 group-focus-within:text-[#22d3ee] transition-colors" size={20} />
+                <input 
+                  type="text" 
+                  required 
+                  value={formData.accessKey}
+                  className="w-full bg-[#22d3ee]/5 border border-[#22d3ee]/20 rounded-[1.5rem] py-5 pl-14 pr-6 outline-none focus:border-[#22d3ee] text-sm transition-all text-white font-mono placeholder:text-slate-700 uppercase"
+                  placeholder="XXXXX"
+                  onChange={(e) => setFormData({...formData, accessKey: e.target.value})}
+                />
+              </div>
+            </div>
+
             {/* PRÉNOM & NOM */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -71,8 +111,7 @@ export default function SignUpPage() {
                 <input 
                   type="text" required 
                   value={formData.firstName}
-                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 px-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all focus:ring-1 ring-[#22d3ee]/20 text-white"
-                  placeholder=""
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 px-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all text-white"
                   onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                 />
               </div>
@@ -81,14 +120,13 @@ export default function SignUpPage() {
                 <input 
                   type="text" required 
                   value={formData.lastName}
-                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 px-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all focus:ring-1 ring-[#22d3ee]/20 text-white"
-                  placeholder=""
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 px-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all text-white"
                   onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                 />
               </div>
             </div>
 
-            {/* EMAIL AVEC ICÔNE */}
+            {/* EMAIL */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Adresse Email</label>
               <div className="relative">
@@ -96,14 +134,13 @@ export default function SignUpPage() {
                 <input 
                   type="email" required 
                   value={formData.email}
-                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all focus:ring-1 ring-[#22d3ee]/20 text-white"
-                  placeholder=""
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all text-white"
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
               </div>
             </div>
 
-            {/* MOT DE PASSE AVEC ICÔNE */}
+            {/* MOT DE PASSE */}
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Mot de passe</label>
               <div className="relative">
@@ -111,8 +148,7 @@ export default function SignUpPage() {
                 <input 
                   type="password" required minLength={6}
                   value={formData.password}
-                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all focus:ring-1 ring-[#22d3ee]/20 text-white"
-                  placeholder=""
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all text-white"
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                 />
               </div>

@@ -48,7 +48,7 @@ export default function VerifyOTP() {
 
         <h1 className="text-3xl font-black italic uppercase mb-2 text-white tracking-tighter">Vérification</h1>
         <p className="text-slate-500 text-xs mb-8 font-mono">
-          // Un code a été envoyé à <br/><span className="text-[#22d3ee] font-bold">{email}</span>
+           Un code a été envoyé à <br/><span className="text-[#22d3ee] font-bold">{email}</span>
         </p>
 
         <form onSubmit={handleVerify} className="space-y-6 text-white">
