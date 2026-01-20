@@ -18,7 +18,7 @@ export default function ExercicePage() {
     // Récupération de la clé depuis .env.local
     const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     
-    // Endpoint utilisant gemini-2.5-flash (validé sur ton compte)
+    // Endpoint utilisant gemini-2.5-flash
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
     const prompt = `Génère un exercice de programmation.
@@ -47,7 +47,6 @@ export default function ExercicePage() {
       const data = await response.json();
       
       if (!response.ok) {
-        // C'est ici que l'erreur "API key not valid" est captée
         throw new Error(data.error?.message || "Clé API manquante ou invalide");
       }
 
@@ -92,6 +91,7 @@ export default function ExercicePage() {
             >
               <option>JavaScript</option>
               <option>Python</option>
+              <option>C</option>
             </select>
             <ChevronDown size={14} className="absolute right-6 bottom-7 text-cyan-500" />
           </div>
