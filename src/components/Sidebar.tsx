@@ -51,7 +51,7 @@ export default function Sidebar() {
           </motion.div>
         </button>
 
-        {/* HEADER : NOM SEULEMENT */}
+        {/* HEADER */}
         <div className={`mb-16 px-2 h-10 flex items-center ${isCollapsed ? 'justify-center' : ''}`}>
           {!isCollapsed && (
             <motion.div 
@@ -92,11 +92,14 @@ export default function Sidebar() {
           })}
         </nav>
 
+        {/* SECTION DECONNEXION CORRIGÉE */}
         <div className="pt-6 mt-auto border-t border-[#22d3ee]/5">
-          <button className={`w-full flex items-center gap-5 px-4 py-4 rounded-2xl text-slate-600 hover:text-red-500 transition-all ${isCollapsed ? 'justify-center' : ''}`}>
-            <LogOut size={22} />
-            {!isCollapsed && <span className="text-[10px] font-black uppercase tracking-widest">Terminate</span>}
-          </button>
+          <Link href="/" className="block">
+            <button className={`w-full flex items-center gap-5 px-4 py-4 rounded-2xl text-slate-600 hover:text-red-500 transition-all ${isCollapsed ? 'justify-center' : ''}`}>
+              <LogOut size={22} />
+              {!isCollapsed && <span className="text-[10px] font-black uppercase tracking-widest">Terminate</span>}
+            </button>
+          </Link>
         </div>
       </motion.aside>
     </>

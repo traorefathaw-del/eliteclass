@@ -3,22 +3,21 @@ import { useState } from "react";
 import Link from "next/link";
 import { 
   Dumbbell, Sparkles, BrainCircuit, Loader2, 
-  CheckCircle2, Code2, ChevronRight, Zap, ChevronDown 
+  CheckCircle2, Code2, ChevronRight, Zap, ChevronDown, Eye, EyeOff 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ExercicePage() {
   const [loading, setLoading] = useState(false);
   const [exercice, setExercice] = useState<any>(null);
+  const [showCorrection, setShowCorrection] = useState(false); // Ajout pour la correction
   const [selection, setSelection] = useState({ lang: "JavaScript", level: "Facile" });
 
   const handleGenerate = async () => {
     setLoading(true);
+    setShowCorrection(false); // Reset lors d'un nouvel exercice
     
-    // Récupération de la clé depuis .env.local
     const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    
-    // Endpoint utilisant gemini-2.5-flash
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
     const prompt = `Génère un exercice de programmation.
@@ -29,8 +28,9 @@ export default function ExercicePage() {
       "titre": "Nom de l'exercice",
       "description": "Enoncé clair",
       "points": 150,
-      "code": "Code de départ"
-    }`;
+      "code": "Code de départ",
+      "correction": "Le code complet solutionné" 
+    }`; // Ajout du champ correction dans le prompt
 
     try {
       const response = await fetch(API_URL, {
@@ -47,7 +47,7 @@ export default function ExercicePage() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error?.message || "Clé API manquante ou invalide");
+        throw new Error(data.error?.message || "Erreur API");
       }
 
       const textResponse = data.candidates[0].content.parts[0].text;
@@ -132,15 +132,30 @@ export default function ExercicePage() {
               </div>
 
               <div className="lg:col-span-2 bg-[#0a0f1a] border border-white/10 rounded-[3.5rem] flex flex-col overflow-hidden shadow-2xl">
-                <div className="bg-white/5 p-5 border-b border-white/5 flex items-center gap-2">
-                   <Code2 size={14} className="text-cyan-400" />
-                   <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">output_code.ia</span>
+                <div className="bg-white/5 p-5 border-b border-white/5 flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                      <Code2 size={14} className="text-cyan-400" />
+                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                        {showCorrection ? "correction_active.ia" : "output_code.ia"}
+                      </span>
+                   </div>
+                   {/* BOUTON CORRECTION */}
+                   <button 
+                      onClick={() => setShowCorrection(!showCorrection)}
+                      className="px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all"
+                   >
+                      {showCorrection ? <><EyeOff size={12} /> Cacher</> : <><Eye size={12} /> Correction</>}
+                   </button>
                 </div>
-                <div className="flex-1 p-10 font-mono text-sm leading-relaxed overflow-x-auto bg-black/20">
-                  <pre className="text-cyan-400/80"><code>{exercice.code}</code></pre>
+                <div className="flex-1 p-10 font-mono text-sm leading-relaxed overflow-x-auto bg-black/20 min-h-[250px]">
+                  <pre className={showCorrection ? "text-emerald-400/80 transition-colors" : "text-cyan-400/80 transition-colors"}>
+                    <code>{showCorrection ? exercice.correction : exercice.code}</code>
+                  </pre>
                 </div>
                 <div className="p-8 bg-white/5 border-t border-white/5 flex justify-between items-center">
-                   <span className="text-slate-500 text-[9px] uppercase font-bold tracking-widest italic">Ready for integration</span>
+                   <span className="text-slate-500 text-[9px] uppercase font-bold tracking-widest italic">
+                    {showCorrection ? "Mode Solution" : "Ready for integration"}
+                   </span>
                    <Link 
                       href="/lab" 
                       onClick={() => localStorage.setItem("currentExercise", JSON.stringify(exercice))}

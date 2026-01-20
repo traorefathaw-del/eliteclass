@@ -114,15 +114,15 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto text-center mb-20">
           <h2 className="text-4xl md:text-7xl font-black mb-6 italic uppercase tracking-tighter">LE FORUM.</h2>
           <p className="text-slate-500 font-mono text-xs tracking-[0.3em] uppercase underline underline-offset-8 decoration-cyan-400">
-            // Intelligence collective en temps réel
+            
           </p>
         </div>
         <div className="max-w-4xl mx-auto space-y-4">
           {[
-            "Comment configurer son environnement sur Ubuntu ?",
-            "Les meilleures pratiques avec Supabase & Next.js",
+            "Comment apprendre à programmer ?",
+            "Quel est le langage adapté pour un débutant?",
             "Comment optimiser son code pour la production ?",
-            "Partagez vos projets de la semaine"
+         
           ].map((topic, i) => (
             <motion.div 
               key={i}
@@ -149,14 +149,14 @@ export default function LandingPage() {
               Apprenez des <br/><span className="text-cyan-400">meilleurs.</span>
             </h2>
             <div className="h-px flex-1 bg-white/5 mx-10 mb-4 hidden md:block" />
-            <p className="text-slate-500 text-xs font-mono uppercase tracking-widest italic">// Mentors certifiés</p>
+            <p className="text-slate-500 text-xs font-mono uppercase tracking-widest italic"></p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { name: "Sarah K.", role: "Senior Dev @Vercel", tech: "React & Next.js" },
-              { name: "Alexandre L.", role: "Cloud Architect", tech: "AWS & Docker" },
-              { name: "Moussa D.", role: "Fullstack Expert", tech: "Supabase & Postgres" }
+              { name: "Fathaw T.", role: "Senior ", tech: "Langage C & Python" },
+              { name: "Sosthène K.", role: "Senior", tech: "JavaScript" },
+          
             ].map((mentor, i) => (
               <motion.div 
                 key={i}

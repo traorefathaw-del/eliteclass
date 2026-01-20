@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Plus, ArrowLeft, Send, X, Inbox, Loader2, User } from "lucide-react";
+import { MessageSquare, Plus, ArrowLeft, Send, X, Inbox, Loader2, User, ImageIcon } from "lucide-react";
 import { createClient } from "../../utils/supabase"; 
 
 export default function ForumEliteFinal() {
@@ -12,6 +12,10 @@ export default function ForumEliteFinal() {
   const [loading, setLoading] = useState(true);
   const [discussions, setDiscussions] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Nouveaux états pour le "Voir plus" et l'image
+  const [showAll, setShowAll] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [newQuestion, setNewQuestion] = useState({ title: "", content: "", tags: "", author: "" });
   const [replyForm, setReplyForm] = useState({ author: "", text: "" });
@@ -22,7 +26,7 @@ export default function ForumEliteFinal() {
       const { data, error } = await supabase
         .from("discussions")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }); // Tri par date décroissante
 
       if (!error && data) setDiscussions(data);
     } catch (err) {
@@ -33,20 +37,43 @@ export default function ForumEliteFinal() {
 
   useEffect(() => { fetchDiscussions(); }, []);
 
+  // Fonction pour uploader l'image
+  const uploadImage = async (file: File) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const { data, error } = await supabase.storage.from('forum-images').upload(fileName, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from('forum-images').getPublicUrl(fileName);
+    return urlData.publicUrl;
+  };
+
   const handlePostQuestion = async () => {
     if (!newQuestion.title || !newQuestion.content || !newQuestion.author) return;
     setIsSubmitting(true);
-    const { error } = await supabase.from("discussions").insert([{
-      title: newQuestion.title.toUpperCase(),
-      content: newQuestion.content,
-      author: newQuestion.author,
-      tags: newQuestion.tags ? newQuestion.tags.split(",").map(t => t.trim().toUpperCase()) : ["GÉNÉRAL"],
-      replies: []
-    }]);
-    if (!error) {
-      await fetchDiscussions();
-      setView("list");
-      setNewQuestion({ title: "", content: "", tags: "", author: "" });
+    
+    try {
+      let imageUrl = null;
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
+      const { error } = await supabase.from("discussions").insert([{
+        title: newQuestion.title.toUpperCase(),
+        content: newQuestion.content,
+        author: newQuestion.author,
+        image_url: imageUrl, // Assure-toi d'avoir la colonne image_url en BDD
+        tags: newQuestion.tags ? newQuestion.tags.split(",").map(t => t.trim().toUpperCase()) : ["GÉNÉRAL"],
+        replies: []
+      }]);
+
+      if (!error) {
+        await fetchDiscussions();
+        setView("list");
+        setNewQuestion({ title: "", content: "", tags: "", author: "" });
+        setImageFile(null);
+      }
+    } catch (err) {
+      console.error("Erreur publication:", err);
     }
     setIsSubmitting(false);
   };
@@ -98,7 +125,8 @@ export default function ForumEliteFinal() {
                 <div className="flex justify-center py-32 opacity-20"><Loader2 className="animate-spin text-[#22d3ee]" size={40} /></div>
               ) : (
                 <div className="grid gap-4">
-                  {discussions.map((post) => (
+                  {/* LIMITE À 4 QUESTIONS PAR DÉFAUT */}
+                  {discussions.slice(0, showAll ? undefined : 4).map((post) => (
                     <div key={post.id} onClick={() => { setSelectedPost(post); setView("read"); }} className="p-8 bg-slate-900/20 border border-white/5 rounded-[2.5rem] cursor-pointer hover:border-[#22d3ee]/30 transition-all group">
                       <div className="flex justify-between items-center">
                         <div className="flex-1">
@@ -112,6 +140,16 @@ export default function ForumEliteFinal() {
                       </div>
                     </div>
                   ))}
+
+                  {/* BOUTON VOIR PLUS */}
+                  {!showAll && discussions.length > 4 && (
+                    <button 
+                      onClick={() => setShowAll(true)} 
+                      className="w-full py-6 text-slate-500 hover:text-[#22d3ee] font-black uppercase text-[10px] tracking-[0.4em] transition-all"
+                    >
+                      + Afficher les autres discussions ({discussions.length - 4})
+                    </button>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -127,6 +165,18 @@ export default function ForumEliteFinal() {
               <input type="text" placeholder="VOTRE PSEUDO" className="w-full bg-slate-900 border border-white/5 p-5 rounded-2xl outline-none focus:border-[#22d3ee] font-black uppercase text-xs transition-all" onChange={(e)=>setNewQuestion({...newQuestion, author: e.target.value})} />
               <input type="text" placeholder="TITRE DE LA QUESTION" className="w-full bg-slate-900 border border-white/5 p-6 rounded-2xl outline-none focus:border-[#22d3ee] font-black italic uppercase text-lg transition-all" onChange={(e)=>setNewQuestion({...newQuestion, title: e.target.value})} />
               <textarea placeholder="DÉTAILLEZ VOTRE PROBLÈME..." className="w-full bg-slate-900 border border-white/5 p-8 rounded-[2rem] outline-none min-h-[200px] focus:border-[#22d3ee] text-sm transition-all" onChange={(e)=>setNewQuestion({...newQuestion, content: e.target.value})} />
+              
+              {/* CHAMP IMAGE */}
+              <div className="relative group">
+                <label className="flex items-center gap-4 w-full bg-slate-900/50 border border-dashed border-white/10 p-6 rounded-2xl cursor-pointer hover:border-[#22d3ee]/50 transition-all">
+                  <ImageIcon className="text-slate-600 group-hover:text-[#22d3ee]" />
+                  <span className="text-slate-500 font-black uppercase text-[10px] tracking-widest">
+                    {imageFile ? imageFile.name : "Ajouter une image illustrative"}
+                  </span>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                </label>
+              </div>
+
               <button disabled={isSubmitting} onClick={handlePostQuestion} className="w-full bg-[#22d3ee] text-[#0a0f1a] p-6 rounded-2xl font-black uppercase text-xs tracking-widest hover:brightness-110 transition-all">
                 {isSubmitting ? "ENVOI EN COURS..." : "PUBLIER LA QUESTION"}
               </button>
@@ -145,10 +195,18 @@ export default function ForumEliteFinal() {
                   <User size={14} /> @{selectedPost.author}
                 </div>
                 <h2 className="text-5xl font-black italic uppercase mb-6 leading-none relative z-10 tracking-tighter">{selectedPost.title}</h2>
+                
+                {/* AFFICHAGE IMAGE SI EXISTANTE */}
+                {selectedPost.image_url && (
+                  <div className="mb-8 relative z-10 rounded-3xl overflow-hidden border border-white/10">
+                    <img src={selectedPost.image_url} alt="Illustration" className="w-full h-auto object-cover max-h-[500px]" />
+                  </div>
+                )}
+
                 <p className="text-slate-300 text-lg leading-relaxed relative z-10">{selectedPost.content}</p>
               </div>
 
-              {/* LISTE DES RÉPONSES */}
+              {/* LISTE DES RÉPONSES (Inchangée) */}
               <div className="space-y-4">
                 <h3 className="text-slate-500 font-black uppercase text-[10px] tracking-widest ml-4">
                   {selectedPost.replies?.length || 0} Réponses trouvées
@@ -177,7 +235,7 @@ export default function ForumEliteFinal() {
                 )}
               </div>
 
-              {/* Formulaire de Réponse */}
+              {/* Formulaire de Réponse (Inchangé) */}
               <div className="mt-12 bg-[#111827] border border-white/5 rounded-[3rem] p-4 shadow-2xl">
                 <input 
                   type="text" 
