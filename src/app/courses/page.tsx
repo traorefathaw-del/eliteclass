@@ -1,9 +1,17 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import dynamic from 'next/dynamic';
-import { Search, Code2, Layers, Youtube, X, Terminal, Play, AlertCircle, Cpu, ChevronRight } from "lucide-react";
+import { Search, Code2, Layers, Youtube, X, Terminal, Play, ChevronRight } from "lucide-react";
 
 const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
+
+// Définition du type pour les vidéos
+interface Video {
+  id: string;
+  title: string;
+  category: string;
+  thumbnail: string;
+}
 
 const VIDEO_DATABASE = [
   { id: "q6FcVUFM42o", title: "LANGAGE C : COURS COMPLET DÉBUTANT (2026)", category: "c", thumbnail: "https://img.youtube.com/vi/q6FcVUFM42o/maxresdefault.jpg" },
@@ -13,22 +21,27 @@ const VIDEO_DATABASE = [
   { id: "it86lQ1mOgw", title: "JAVASCRIPT : L'ESSENTIEL EN 1 HEURE", category: "javascript", thumbnail: "https://img.youtube.com/vi/it86lQ1mOgw/maxresdefault.jpg" }
 ];
 
+
 const CODE_TEMPLATES = {
-  c: `#include <stdio.h>\n#include <stdlib.h>\n\nint main() {\n\n\n    return 0;\n}`,
-  python: '',
-  javascript: ''
+  c: `#include <stdio.h>\n#include <stdlib.h>\n\nint main() {\n    int age;\n    printf("Entrez votre age: ");\n    scanf("%d", &age);\n    printf("Vous avez %d ans", age);\n    return 0;\n}`,
+  python: 'print("Hello Python")',
+  javascript: 'console.log("Hello JS")'
+};
+
+type OutputLine = {
+    msg: string, 
+    type: 'error' | 'success' | 'system' | 'result' | 'input'
 };
 
 export default function SmartWorkspace() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]); 
-  const [activeVideoId, setActiveVideoId] = useState(null);
+  const [searchResults, setSearchResults] = useState<Video[]>([]); 
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [showIDE, setShowIDE] = useState(false);
-  const [selectedLang, setSelectedLang] = useState("c");
+  const [selectedLang, setSelectedLang] = useState<keyof typeof CODE_TEMPLATES>("c");
   const [code, setCode] = useState(CODE_TEMPLATES.c);
   
-  // Paramètres du moteur d'exécution local (EliteLabs Engine)
-  const [output, setOutput] = useState<{msg: string, type: 'error' | 'success' | 'system' | 'result' | 'input'}[]>([]);
+  const [output, setOutput] = useState<OutputLine[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isWaitingForInput, setIsWaitingForInput] = useState(false);
   
@@ -38,7 +51,7 @@ export default function SmartWorkspace() {
     didExecuteIf: false
   });
 
-  const addToConsole = (msg: string, type: any) => {
+  const addToConsole = (msg: string, type: OutputLine['type']) => {
     setOutput(prev => [...prev, { msg, type }]);
   };
 
@@ -57,13 +70,6 @@ export default function SmartWorkspace() {
       const cleanLine = line.replace(/"[^"]*"/g, "");
       const varDecl = cleanLine.match(/(?:int|float|char)\s+(\w+)/);
       if (varDecl) declaredVars.add(varDecl[1]);
-      const words = cleanLine.match(/\b([a-zA-Z_]\w*)\b/g) || [];
-      const keywords = ["int", "char", "float", "if", "else", "printf", "scanf", "return", "main"];
-      for (const word of words) {
-        if (keywords.includes(word) || !isNaN(Number(word))) continue;
-        if (varDecl && word === varDecl[1]) continue;
-        if (!declaredVars.has(word)) throw new Error(`Error: Variable '${word}' non définie (Ligne ${i + 1})`);
-      }
     }
   };
 
@@ -82,31 +88,24 @@ export default function SmartWorkspace() {
         if (!line || line.startsWith("#") || line === "{" || line === "}" || line.startsWith("return")) continue;
 
         if (line.match(/(?:int|float|char)\s+(\w+)/)) {
-          const name = line.match(/(?:int|float|char)\s+(\w+)/)![1];
-          cpu.current.memory[name] = { value: 0, address: "0x" + Math.random().toString(16).slice(2,6).toUpperCase() };
+          const match = line.match(/(?:int|float|char)\s+(\w+)/);
+          if (match) {
+            const name = match[1];
+            cpu.current.memory[name] = { value: 0, address: "0x" + Math.random().toString(16).slice(2,6).toUpperCase() };
+          }
           continue;
         }
-        if (line.startsWith("if")) {
-          let cond = line.match(/\((.*)\)/)?.[1] || "";
-          Object.keys(cpu.current.memory).forEach(v => {
-            cond = cond.replace(new RegExp(`\\b${v}\\b`, 'g'), cpu.current.memory[v].value);
-          });
-          cpu.current.didExecuteIf = eval(cond);
-          if (!cpu.current.didExecuteIf) i++; 
-          continue;
-        }
-        if (line.startsWith("else")) {
-          if (cpu.current.didExecuteIf) i++;
-          continue;
-        }
+
         if (line.startsWith("scanf")) {
           if (!line.includes("&")) throw new Error(`Segmentation Fault: '&' manquant (Ligne ${i+1})`);
           setIsWaitingForInput(true);
           cpu.current.lineIndex = i + 1;
           return;
         }
+
         if (line.startsWith("printf")) {
-          const content = line.match(/\((.*)\)/)?.[1] || "";
+          const contentMatch = line.match(/\((.*)\)/);
+          const content = contentMatch ? contentMatch[1] : "";
           const parts = content.split(/,(.+)/);
           let txt = parts[0].replace(/"/g, '').replace(/\\n/g, '');
           if (parts[1]) {
@@ -116,23 +115,29 @@ export default function SmartWorkspace() {
           addToConsole(txt, 'result');
         }
       }
-      addToConsole("Process finished with exit code 0", 'success');
+      if (!isWaitingForInput) addToConsole("Process finished with exit code 0", 'success');
     } catch (err: any) { addToConsole(err.message, 'error'); }
   };
 
   const handleInputSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue) return;
-    addToConsole(inputValue, 'input');
-    const varMatch = code.split('\n')[cpu.current.lineIndex - 1].match(/&(\w+)/);
-    if (varMatch) cpu.current.memory[varMatch[1]].value = parseInt(inputValue);
-    setIsWaitingForInput(false);
+    const currentVal = inputValue;
     setInputValue("");
-    executeEngine(cpu.current.lineIndex);
+    setIsWaitingForInput(false);
+    addToConsole(currentVal, 'input');
+    
+    const varMatch = code.split('\n')[cpu.current.lineIndex - 1].match(/&(\w+)/);
+    if (varMatch) {
+        cpu.current.memory[varMatch[1]].value = currentVal;
+    }
+    
+    // On relance l'exécution après le scanf
+    setTimeout(() => executeEngine(cpu.current.lineIndex), 100);
   };
 
   // --- RECHERCHE ---
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim().toLowerCase();
     if (!query) { setSearchResults([]); return; }
@@ -180,21 +185,23 @@ export default function SmartWorkspace() {
           </div>
         </div>
 
-        <div className="w-80 border-l border-white/5 bg-[#0a0f1a]/30 p-6 flex flex-col gap-6 overflow-y-auto text-center items-center justify-center">
-          <div className="flex items-center gap-3 mb-2 opacity-50 font-black uppercase text-[9px] tracking-widest self-start">
+        <div className="w-80 border-l border-white/5 bg-[#0a0f1a]/30 p-6 flex flex-col gap-6 overflow-y-auto">
+          <div className="flex items-center gap-3 mb-2 opacity-50 font-black uppercase text-[9px] tracking-widest">
             <Layers size={14} /> Playlist
           </div>
           {searchResults.length > 0 ? (
             <div className="space-y-6 w-full">
               {searchResults.map((video) => (
                 <button key={video.id} onClick={() => setActiveVideoId(video.id)} className={`w-full group text-left transition-all ${activeVideoId === video.id ? 'opacity-100 scale-105' : 'opacity-30 hover:opacity-100'}`}>
-                  <div className="relative aspect-video rounded-xl overflow-hidden mb-2 border border-white/10 shadow-lg"><img src={video.thumbnail} className="object-cover w-full h-full" alt="" /></div>
+                  <div className="relative aspect-video rounded-xl overflow-hidden mb-2 border border-white/10 shadow-lg">
+                    <img src={video.thumbnail} className="object-cover w-full h-full" alt={video.title} />
+                  </div>
                   <p className="text-[9px] font-black text-slate-200 uppercase leading-tight line-clamp-2">{video.title}</p>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-[9px] text-slate-600 italic uppercase">
+            <div className="h-full flex flex-col items-center justify-center text-[9px] text-slate-600 italic uppercase text-center">
               Rien à afficher.<br/>Veuillez lancer une recherche.
             </div>
           )}
@@ -203,14 +210,19 @@ export default function SmartWorkspace() {
 
       {showIDE && (
         <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl p-4 flex items-center justify-center">
-          <div className="w-full max-w-5xl h-[90vh] bg-[#0d1117] rounded-[2.5rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-5xl h-[90vh] bg-[#0d1117] rounded-[2.5rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl">
             
             <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/20">
               <div className="flex items-center gap-4">
                 <button onClick={() => setShowIDE(false)} className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-colors"><X size={20} /></button>
                 <select 
                   value={selectedLang} 
-                  onChange={(e) => { setSelectedLang(e.target.value); setCode(CODE_TEMPLATES[e.target.value]); setOutput([]); }}
+                  onChange={(e) => { 
+                    const lang = e.target.value as keyof typeof CODE_TEMPLATES;
+                    setSelectedLang(lang); 
+                    setCode(CODE_TEMPLATES[lang]); 
+                    setOutput([]); 
+                  }}
                   className="bg-zinc-900 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-white/10 text-cyan-400 outline-none cursor-pointer"
                 >
                   <option value="c">Langage C (GCC)</option>
@@ -242,14 +254,19 @@ export default function SmartWorkspace() {
               <div className="space-y-2">
                 {output.length === 0 && <div className="text-slate-700 italic">Prêt pour l'exécution...</div>}
                 {output.map((line, i) => (
-                  <div key={i} className={`flex items-start gap-2 ${line.type === 'error' ? 'text-red-500 font-bold' : line.type === 'result' ? 'text-emerald-400' : 'text-slate-500 italic'}`}>
+                  <div key={i} className={`flex items-start gap-2 ${line.type === 'error' ? 'text-red-500 font-bold' : line.type === 'result' ? 'text-emerald-400' : line.type === 'input' ? 'text-cyan-400' : 'text-slate-500 italic'}`}>
                     <span className="whitespace-pre-wrap">{line.msg}</span>
                   </div>
                 ))}
                 {isWaitingForInput && (
                   <form onSubmit={handleInputSubmit} className="flex items-center gap-2">
                     <ChevronRight size={14} className="text-emerald-500 animate-pulse" />
-                    <input autoFocus className="bg-transparent border-b border-emerald-900 outline-none flex-1 text-white" value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
+                    <input 
+                        autoFocus 
+                        className="bg-transparent border-b border-emerald-900 outline-none flex-1 text-white" 
+                        value={inputValue} 
+                        onChange={(e) => setInputValue(e.target.value)} 
+                    />
                   </form>
                 )}
               </div>
