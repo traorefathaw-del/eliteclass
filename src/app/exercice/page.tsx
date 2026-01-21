@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Ajout de useEffect
 import Link from "next/link";
 import { 
   Dumbbell, Sparkles, BrainCircuit, Loader2, 
@@ -10,27 +10,35 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function ExercicePage() {
   const [loading, setLoading] = useState(false);
   const [exercice, setExercice] = useState<any>(null);
-  const [showCorrection, setShowCorrection] = useState(false); // Ajout pour la correction
+  const [showCorrection, setShowCorrection] = useState(false);
   const [selection, setSelection] = useState({ lang: "JavaScript", level: "Facile" });
+
+  // 1. Persistance : Charger l'exercice au montage du composant
+  useEffect(() => {
+    const savedExercise = localStorage.getItem("currentExercise");
+    if (savedExercise) {
+      setExercice(JSON.parse(savedExercise));
+    }
+  }, []);
 
   const handleGenerate = async () => {
     setLoading(true);
-    setShowCorrection(false); // Reset lors d'un nouvel exercice
+    setShowCorrection(false);
     
     const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
-    const prompt = `Génère un exercice de programmation.
+    const prompt = `Génère un exercice de programmation aléatoire et unique.
     Langage: ${selection.lang}
     Difficulté: ${selection.level}
     Réponds UNIQUEMENT avec ce format JSON strict :
     {
       "titre": "Nom de l'exercice",
-      "description": "Enoncé clair",
+      "description": "Enoncé clair et précis",
       "points": 150,
-      "code": "Code de départ",
+      "code": "Code de départ avec commentaires",
       "correction": "Le code complet solutionné" 
-    }`; // Ajout du champ correction dans le prompt
+    }`;
 
     try {
       const response = await fetch(API_URL, {
@@ -51,7 +59,11 @@ export default function ExercicePage() {
       }
 
       const textResponse = data.candidates[0].content.parts[0].text;
-      setExercice(JSON.parse(textResponse));
+      const parsedExercice = JSON.parse(textResponse);
+      
+      // 2. Sauvegarde immédiate pour la persistance
+      setExercice(parsedExercice);
+      localStorage.setItem("currentExercise", JSON.stringify(parsedExercice));
 
     } catch (error: any) {
       console.error("Erreur:", error);
@@ -103,6 +115,7 @@ export default function ExercicePage() {
               onChange={(e) => setSelection({...selection, level: e.target.value})}
             >
               <option>Facile</option>
+              <option>Moyen</option>
               <option>Elite</option>
             </select>
             <ChevronDown size={14} className="absolute right-6 bottom-7 text-cyan-500" />
@@ -139,7 +152,6 @@ export default function ExercicePage() {
                         {showCorrection ? "correction_active.ia" : "output_code.ia"}
                       </span>
                    </div>
-                   {/* BOUTON CORRECTION */}
                    <button 
                       onClick={() => setShowCorrection(!showCorrection)}
                       className="px-4 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all"
@@ -158,7 +170,6 @@ export default function ExercicePage() {
                    </span>
                    <Link 
                       href="/lab" 
-                      onClick={() => localStorage.setItem("currentExercise", JSON.stringify(exercice))}
                       className="flex items-center gap-3 px-8 py-4 bg-cyan-400 text-[#0a0f1a] rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg"
                    >
                       Lancer l'IDE <ChevronRight size={16} />

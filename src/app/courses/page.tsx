@@ -23,7 +23,7 @@ const VIDEO_DATABASE = [
 
 
 const CODE_TEMPLATES = {
-  c: `#include <stdio.h>\n#include <stdlib.h>\n\nint main() {\n    int age;\n    printf("Entrez votre age: ");\n    scanf("%d", &age);\n    printf("Vous avez %d ans", age);\n    return 0;\n}`,
+  c: `#include <stdio.h>\n#include <stdlib.h>\n\nint main() {\n  \n    return 0;\n}`,
   python: 'print("Hello Python")',
   javascript: 'console.log("Hello JS")'
 };

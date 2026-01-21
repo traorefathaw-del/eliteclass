@@ -6,7 +6,8 @@ import { motion } from "framer-motion";
 import { 
   LayoutDashboard, BookOpen, Library, 
   UserCircle, Settings, LogOut, 
-  FlaskConical, Dumbbell, ChevronLeft
+  FlaskConical, Dumbbell, ChevronLeft,
+  MessageSquare // Ajout de l'icône pour le chat
 } from "lucide-react";
 
 const menuItems = [
@@ -25,6 +26,12 @@ const menuItems = [
     label: "Communauté", 
     href: "/forum" 
   },
+  // NOUVELLE SECTION : CHAT PRIVÉ
+  { 
+    icon: <MessageSquare size={22} />, 
+    label: "Chat Privé", 
+    href: "/chat" 
+  },
   { icon: <UserCircle size={22} />, label: "Mon compte", href: "/profile" },
   { icon: <Settings size={22} />, label: "Paramètres", href: "/settings" },
 ];
@@ -35,6 +42,7 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Spacer pour le layout */}
       <div className={`transition-all duration-300 shrink-0 ${isCollapsed ? 'w-[100px]' : 'w-[280px]'}`} />
 
       <motion.aside 
@@ -72,6 +80,7 @@ export default function Sidebar() {
           )}
         </div>
 
+        {/* NAVIGATION */}
         <nav className="flex-1 space-y-2 px-1">
           {menuItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -92,7 +101,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* SECTION DECONNEXION CORRIGÉE */}
+        {/* FOOTER / DECONNEXION */}
         <div className="pt-6 mt-auto border-t border-[#22d3ee]/5">
           <Link href="/" className="block">
             <button className={`w-full flex items-center gap-5 px-4 py-4 rounded-2xl text-slate-600 hover:text-red-500 transition-all ${isCollapsed ? 'justify-center' : ''}`}>

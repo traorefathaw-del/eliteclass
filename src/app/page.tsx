@@ -155,7 +155,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { name: "Fathaw T.", role: "Senior ", tech: "Langage C & Python" },
-              { name: "Sosthène K.", role: "Senior", tech: "JavaScript" },
+              { name: "Sosthène K.", role: "Senior", tech: "JavaScript & Langage C" },
           
             ].map((mentor, i) => (
               <motion.div 
