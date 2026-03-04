@@ -1,279 +1,305 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from 'next/dynamic';
-import { Search, Code2, Layers, Youtube, X, Terminal, Play, ChevronRight } from "lucide-react";
+import { createClient } from "@/utils/supabase"; 
+import { 
+  Star, CheckCircle2, X, 
+  Trophy, Award, Zap, XCircle, Lock, Activity, Loader2
+} from "lucide-react";
 
-const Editor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
+// Import dynamique de l'éditeur avec un fallback pour éviter les erreurs Turbopack
+const Editor = dynamic(() => import('@monaco-editor/react'), { 
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-zinc-900 animate-pulse flex items-center justify-center text-zinc-500">Chargement de l'interface de code...</div>
+});
 
-// Définition du type pour les vidéos
-interface Video {
-  id: string;
-  title: string;
-  category: string;
-  thumbnail: string;
-}
-
-const VIDEO_DATABASE = [
-  { id: "q6FcVUFM42o", title: "LANGAGE C : COURS COMPLET DÉBUTANT (2026)", category: "c", thumbnail: "https://img.youtube.com/vi/q6FcVUFM42o/maxresdefault.jpg" },
-  { id: "oUJolR5bX6g", title: "APPRENDRE PYTHON (TUTO COMPLET 2H) - JONATHAN", category: "python", thumbnail: "https://img.youtube.com/vi/oUJolR5bX6g/maxresdefault.jpg" },
-  { id: "LamjAFnybo0", title: "APPRENDRE PYTHON DE A À Z (MASTERCLASS)", category: "python", thumbnail: "https://img.youtube.com/vi/LamjAFnybo0/maxresdefault.jpg" },
-  { id: "Ew7KG2j8eII", title: "JAVASCRIPT DE A À Z : LES BASES", category: "javascript", thumbnail: "https://img.youtube.com/vi/Ew7KG2j8eII/maxresdefault.jpg" },
-  { id: "it86lQ1mOgw", title: "JAVASCRIPT : L'ESSENTIEL EN 1 HEURE", category: "javascript", thumbnail: "https://img.youtube.com/vi/it86lQ1mOgw/maxresdefault.jpg" }
+// --- STRUCTURE DES CHAPITRES (Ta structure originale) ---
+const CHAPTERS = [
+  {
+    id: "ch1",
+    title: "Chapitre 1 : Les Variables & Types",
+    color: "bg-emerald-600",
+    lessons: [
+      { id: "l1_1", title: "L'Assignation", task: "Crée x = 10", expected: "10", code: "x = \nprint(x)" },
+      { id: "l1_2", title: "Les Nombres", task: "Additionne 5 + 5", expected: "10", code: "total = \nprint(total)" },
+      { id: "l1_3", title: "Le Texte", task: "Crée nom = 'Elite'", expected: "Elite", code: "nom = \nprint(nom)" },
+      { id: "l1_4", title: "Concaténation", task: "Affiche 'Salut ' + nom", expected: "Salut Elite", code: "nom = 'Elite'\nprint()" },
+      { id: "l1_5", title: "🏆 Test Final 1", task: "Affiche 'Âge: 25'", expected: "Âge: 25", code: "age = 25\nprint(f'Âge: {age}')" },
+    ]
+  },
+  {
+    id: "ch2",
+    title: "Chapitre 2 : Logique & Conditions",
+    color: "bg-cyan-600",
+    lessons: [
+      { id: "l2_1", title: "Comparaison", task: "Affiche 10 > 5", expected: "True", code: "print(10 > 5)" },
+      { id: "l2_2", title: "Le IF", task: "Si x=10 affiche 'OK'", expected: "OK", code: "x = 10\nif x == 10:\n    print('OK')" },
+      { id: "l2_3", title: "Le ELSE", task: "Affiche 'Non' si x=5 est différent de 10", expected: "Non", code: "x = 5\nif x == 10:\n    print('Oui')\nelse:\n    print('Non')" },
+      { id: "l2_4", title: "ELIF", task: "Teste si x est 0", expected: "Zéro", code: "x = 0\nif x > 0:\n    print('Positif')\nelif x == 0:\n    print('Zéro')" },
+      { id: "l2_5", title: "🏆 Test Final 2", task: "Vérifie si age=18 est majeur", expected: "Majeur", code: "age = 18\nif age >= 18:\n    print('Majeur')" },
+    ]
+  },
+  {
+    id: "ch3",
+    title: "Chapitre 3 : Listes & Boucles",
+    color: "bg-indigo-600",
+    lessons: [
+      { id: "l3_1", title: "Création Liste", task: "Crée L = [1, 2]", expected: "[1, 2]", code: "L = [1, 2]\nprint(L)" },
+      { id: "l3_2", title: "Accès Index", task: "Affiche le 1er de [10, 20]", expected: "10", code: "L = [10, 20]\nprint(L[0])" },
+      { id: "l3_3", title: "Boucle FOR", task: "Affiche 0, 1, 2", expected: "0\n1\n2", code: "for i in range(3):\n    print(i)" },
+      { id: "l3_4", title: "Parcourir Liste", task: "Affiche chaque fruit", expected: "pomme\nbanane", code: "fruits = ['pomme', 'banane']\nfor f in fruits:\n    print(f)" },
+      { id: "l3_5", title: "🏆 Test Final 3", task: "Somme de [1, 2, 3]", expected: "6", code: "L = [1, 2, 3]\nprint(sum(L))" },
+    ]
+  },
+  {
+    id: "ch4",
+    title: "Chapitre 4 : Fonctions & Maîtrise",
+    color: "bg-purple-600",
+    lessons: [
+      { id: "l4_1", title: "Définition", task: "Crée la fonction hello()", expected: "Salut", code: "def hello():\n    print('Salut')\nhello()" },
+      { id: "l4_2", title: "Arguments", task: "Fonction double(n)", expected: "20", code: "def double(n):\n    print(n * 2)\ndouble(10)" },
+      { id: "l4_3", title: "Return", task: "Renvoie x * x", expected: "25", code: "def carre(x):\n    return x * x\nprint(carre(5))" },
+      { id: "l4_4", title: "Modules", task: "Importe math et affiche pi", expected: "3.14", code: "import math\nprint(round(math.pi, 2))" },
+      { id: "l4_5", title: "🚀 PROJET FINAL", task: "Calcul moyenne de [10, 20]", expected: "Moyenne: 15.0", code: "notes = [10, 20]\nmoy = sum(notes) / len(notes)\nprint(f'Moyenne: {moy}')" },
+    ]
+  }
 ];
 
+export default function EliteLingoApp() {
+  const supabase = createClient();
+  const [view, setView] = useState<'map' | 'exercise'>('map');
+  const [currentLesson, setCurrentLesson] = useState<any>(null);
+  const [currentLessonIdx, setCurrentLessonIdx] = useState(0);
+  const [currentChapterIdx, setCurrentChapterIdx] = useState(0);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [xp, setXp] = useState(0);
+  const [user, setUser] = useState<any>(null);
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<'idle' | 'success' | 'error' | 'running'>('idle');
+  const [errorDetails, setErrorDetails] = useState({ expected: "", received: "", technical: "" });
+  const [mounted, setMounted] = useState(false);
+  const [isPyReady, setIsPyReady] = useState(false);
+  const pyodide = useRef<any>(null);
 
-const CODE_TEMPLATES = {
-  c: `#include <stdio.h>\n#include <stdlib.h>\n\nint main() {\n  \n    return 0;\n}`,
-  python: 'print("Hello Python")',
-  javascript: 'console.log("Hello JS")'
-};
-
-type OutputLine = {
-    msg: string, 
-    type: 'error' | 'success' | 'system' | 'result' | 'input'
-};
-
-export default function SmartWorkspace() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Video[]>([]); 
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
-  const [showIDE, setShowIDE] = useState(false);
-  const [selectedLang, setSelectedLang] = useState<keyof typeof CODE_TEMPLATES>("c");
-  const [code, setCode] = useState(CODE_TEMPLATES.c);
-  
-  const [output, setOutput] = useState<OutputLine[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [isWaitingForInput, setIsWaitingForInput] = useState(false);
-  
-  const cpu = useRef({
-    lineIndex: 0,
-    memory: {} as Record<string, { value: any, address: string }>,
-    didExecuteIf: false
-  });
-
-  const addToConsole = (msg: string, type: OutputLine['type']) => {
-    setOutput(prev => [...prev, { msg, type }]);
-  };
-
-  // --- LOGIQUE DU MOTEUR DE COMPILATION ---
-  const validateSyntax = (lines: string[]) => {
-    const declaredVars = new Set<string>();
-    for (let i = 0; i < lines.length; i++) {
-      let line = lines[i].trim();
-      if (!line || line.startsWith("#") || line === "{" || line === "}" || line.startsWith("int main") || line.startsWith("return")) {
-         const decl = line.match(/(?:int|float|char)\s+(\w+)/);
-         if(decl) declaredVars.add(decl[1]);
-         continue;
+  // --- INITIALISATION ---
+  useEffect(() => {
+    setMounted(true);
+    
+    async function initApp() {
+      // 1. Session User
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        const { data } = await supabase.from('profile').select('xp, completed_lessons').eq('id', user.id).maybeSingle();
+        if (data) {
+          setXp(data.xp || 0);
+          setCompletedLessons(data.completed_lessons || []);
+        }
       }
-      const isControl = line.startsWith("if") || line.startsWith("else") || line.endsWith("{");
-      if (!isControl && !line.endsWith(";")) throw new Error(`Syntax Error: ';' manquant à la ligne ${i + 1}`);
-      const cleanLine = line.replace(/"[^"]*"/g, "");
-      const varDecl = cleanLine.match(/(?:int|float|char)\s+(\w+)/);
-      if (varDecl) declaredVars.add(varDecl[1]);
+
+      // 2. Pyodide (Python in Browser)
+      if (typeof window !== "undefined") {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js";
+        script.onload = async () => {
+          pyodide.current = await (window as any).loadPyodide();
+          setIsPyReady(true);
+        };
+        document.head.appendChild(script);
+      }
+    }
+
+    initApp();
+  }, []);
+
+  const saveProgress = async (newXp: number, newLessons: string[]) => {
+    if (user) {
+      await supabase.from('profile').upsert({ 
+        id: user.id, 
+        xp: newXp, 
+        completed_lessons: newLessons 
+      });
     }
   };
 
-  const executeEngine = (startIndex = 0) => {
-    const lines = code.split('\n');
-    if (startIndex === 0) {
-      setOutput([]);
-      try { validateSyntax(lines); } catch (err: any) { addToConsole(err.message, 'error'); return; }
-      addToConsole("> Initialisation de l'environnement C...", 'system');
-      cpu.current = { lineIndex: 0, memory: {}, didExecuteIf: false };
-    }
+  const startLesson = (lesson: any, lIdx: number, cIdx: number) => {
+    setCurrentLesson(lesson);
+    setCurrentLessonIdx(lIdx);
+    setCurrentChapterIdx(cIdx);
+    setCode(lesson.code || "");
+    setStatus('idle');
+    setView('exercise');
+  };
 
+  const checkCode = async () => {
+    if (!isPyReady) return;
+    setStatus('running');
+    let output: string[] = [];
+    
     try {
-      for (let i = startIndex; i < lines.length; i++) {
-        let line = lines[i].trim();
-        if (!line || line.startsWith("#") || line === "{" || line === "}" || line.startsWith("return")) continue;
-
-        if (line.match(/(?:int|float|char)\s+(\w+)/)) {
-          const match = line.match(/(?:int|float|char)\s+(\w+)/);
-          if (match) {
-            const name = match[1];
-            cpu.current.memory[name] = { value: 0, address: "0x" + Math.random().toString(16).slice(2,6).toUpperCase() };
-          }
-          continue;
+      pyodide.current.setStdout({ batched: (text: string) => { output.push(text.trim()); } });
+      await pyodide.current.runPythonAsync(code);
+      const res = output.join("\n");
+      
+      if (res === currentLesson.expected) {
+        setStatus('success');
+        if (!completedLessons.includes(currentLesson.id)) {
+          const nextXp = xp + 25;
+          const nextLessons = [...completedLessons, currentLesson.id];
+          setXp(nextXp);
+          setCompletedLessons(nextLessons);
+          saveProgress(nextXp, nextLessons);
         }
-
-        if (line.startsWith("scanf")) {
-          if (!line.includes("&")) throw new Error(`Segmentation Fault: '&' manquant (Ligne ${i+1})`);
-          setIsWaitingForInput(true);
-          cpu.current.lineIndex = i + 1;
-          return;
-        }
-
-        if (line.startsWith("printf")) {
-          const contentMatch = line.match(/\((.*)\)/);
-          const content = contentMatch ? contentMatch[1] : "";
-          const parts = content.split(/,(.+)/);
-          let txt = parts[0].replace(/"/g, '').replace(/\\n/g, '');
-          if (parts[1]) {
-            const vName = parts[1].trim().replace('&', '');
-            txt = txt.replace(/%d|%s/g, cpu.current.memory[vName]?.value ?? "NULL");
-          }
-          addToConsole(txt, 'result');
-        }
+      } else {
+        setStatus('error');
+        setErrorDetails({ expected: currentLesson.expected, received: res, technical: "" });
       }
-      if (!isWaitingForInput) addToConsole("Process finished with exit code 0", 'success');
-    } catch (err: any) { addToConsole(err.message, 'error'); }
-  };
-
-  const handleInputSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue) return;
-    const currentVal = inputValue;
-    setInputValue("");
-    setIsWaitingForInput(false);
-    addToConsole(currentVal, 'input');
-    
-    const varMatch = code.split('\n')[cpu.current.lineIndex - 1].match(/&(\w+)/);
-    if (varMatch) {
-        cpu.current.memory[varMatch[1]].value = currentVal;
+    } catch (e: any) { 
+      setStatus('error');
+      setErrorDetails({ expected: currentLesson.expected, received: "Erreur de syntaxe", technical: e.message });
     }
-    
-    // On relance l'exécution après le scanf
-    setTimeout(() => executeEngine(cpu.current.lineIndex), 100);
   };
 
-  // --- RECHERCHE ---
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) { setSearchResults([]); return; }
-    const filtered = VIDEO_DATABASE.filter(v => v.category.includes(query) || v.title.toLowerCase().includes(query));
-    setSearchResults(filtered);
-    if (filtered.length > 0) setActiveVideoId(filtered[0].id);
-  };
+  if (!mounted) return null;
 
-  return (
-    <div className="h-screen bg-[#05070a] text-white flex flex-col font-sans overflow-hidden">
-      <nav className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-[#0a0f1a]">
-        <div className="w-1/4 flex items-center gap-2">
-            <h1 className="font-black italic text-xl tracking-tighter">ELITE<span className="text-cyan-400">.</span>LABS</h1>
-        </div>
-
-        <form onSubmit={handleSearch} className="flex-1 max-w-xl relative">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-          <input 
-            type="text"
-            placeholder="Rechercher (c, python, javascript...)"
-            className="w-full bg-black/40 border border-white/10 rounded-full py-3 pl-14 pr-6 text-sm focus:border-cyan-400/50 outline-none transition-all"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </form>
-
-        <div className="w-1/4 flex justify-end">
-          <button onClick={() => setShowIDE(true)} className="w-12 h-12 bg-cyan-400 text-black rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-transform hover:scale-110">
-              <Code2 size={22} />
-          </button>
-        </div>
-      </nav>
-
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 bg-black p-6 flex items-center justify-center">
-          <div className="w-full h-full rounded-[2.5rem] overflow-hidden border border-white/5 bg-[#0a0f1a]/50 shadow-2xl">
-            {activeVideoId ? (
-              <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${activeVideoId}?autoplay=1`} allowFullScreen />
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center opacity-10">
-                <Youtube size={80} className="mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-[0.4em]">Faites une recherche pour charger les cours</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="w-80 border-l border-white/5 bg-[#0a0f1a]/30 p-6 flex flex-col gap-6 overflow-y-auto">
-          <div className="flex items-center gap-3 mb-2 opacity-50 font-black uppercase text-[9px] tracking-widest">
-            <Layers size={14} /> Playlist
-          </div>
-          {searchResults.length > 0 ? (
-            <div className="space-y-6 w-full">
-              {searchResults.map((video) => (
-                <button key={video.id} onClick={() => setActiveVideoId(video.id)} className={`w-full group text-left transition-all ${activeVideoId === video.id ? 'opacity-100 scale-105' : 'opacity-30 hover:opacity-100'}`}>
-                  <div className="relative aspect-video rounded-xl overflow-hidden mb-2 border border-white/10 shadow-lg">
-                    <img src={video.thumbnail} className="object-cover w-full h-full" alt={video.title} />
-                  </div>
-                  <p className="text-[9px] font-black text-slate-200 uppercase leading-tight line-clamp-2">{video.title}</p>
-                </button>
-              ))}
+  if (view === 'map') {
+    return (
+      <div className="min-h-screen bg-[#020617] text-white pb-20 font-sans">
+        <nav className="sticky top-0 z-50 bg-[#020617]/90 backdrop-blur-md border-b border-white/5 p-4 flex justify-between px-6 items-center">
+            <div className="font-black italic text-xl tracking-tighter uppercase">
+              <span className="text-cyan-500"></span>
             </div>
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-[9px] text-slate-600 italic uppercase text-center">
-              Rien à afficher.<br/>Veuillez lancer une recherche.
+            <div className="flex items-center gap-3 bg-zinc-900 px-4 py-2 rounded-2xl border border-yellow-500/30">
+                <Zap size={18} className="text-yellow-400 fill-yellow-400" />
+                <span className="font-black text-yellow-500 tracking-tighter">{xp} XP</span>
+            </div>
+        </nav>
+
+        <main className="max-w-md mx-auto py-10 px-6">
+          {!isPyReady && (
+            <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center gap-3">
+              <Loader2 className="animate-spin text-blue-400" size={18} />
+              <p className="text-[10px] font-bold uppercase text-blue-400">Initialisation du noyau Python...</p>
             </div>
           )}
-        </div>
+
+          {CHAPTERS.map((chapter, cIdx) => (
+            <div key={chapter.id} className="mb-20">
+              <div className={`${chapter.color} p-8 rounded-[32px] mb-12 shadow-2xl relative overflow-hidden border-b-8 border-black/20`}>
+                <h2 className="text-white font-black text-xl uppercase tracking-tighter italic">{chapter.title}</h2>
+                <Award className="absolute -right-6 -bottom-6 text-white/10 rotate-12 w-32 h-32" />
+              </div>
+
+              <div className="flex flex-col items-center gap-10">
+                {chapter.lessons.map((lesson, lIdx) => {
+                  const isDone = completedLessons.includes(lesson.id);
+                  const prevLessonId = lIdx > 0 ? chapter.lessons[lIdx-1].id : (cIdx > 0 ? CHAPTERS[cIdx-1].lessons[4].id : null);
+                  const isLocked = prevLessonId ? !completedLessons.includes(prevLessonId) : false;
+                  const offsets = ["ml-0", "ml-24", "ml-0", "-ml-24", "ml-0"];
+
+                  return (
+                    <div key={lesson.id} className={`flex flex-col items-center ${offsets[lIdx]}`}>
+                      <button
+                        disabled={isLocked || !isPyReady}
+                        onClick={() => startLesson(lesson, lIdx, cIdx)}
+                        className={`w-20 h-20 rounded-full border-b-[8px] transition-all flex items-center justify-center relative active:translate-y-1 active:border-b-0
+                          ${isDone ? 'bg-emerald-500 border-emerald-700 shadow-lg' : 
+                            isLocked ? 'bg-zinc-800 border-zinc-950 opacity-40' : 
+                            'bg-cyan-500 border-cyan-700 shadow-xl animate-pulse'}
+                        `}
+                      >
+                        {isLocked ? <Lock size={24} className="text-zinc-500" /> : 
+                         lIdx === 4 ? <Trophy className="text-white w-8 h-8" /> : 
+                         isDone ? <CheckCircle2 className="w-8 h-8 text-white" /> : <Star className="w-8 h-8 text-white" fill="white" />}
+                      </button>
+                      <span className="mt-4 font-black text-[10px] uppercase tracking-widest text-zinc-500 italic text-center max-w-[100px]">
+                        {lesson.title}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </main>
       </div>
+    );
+  }
 
-      {showIDE && (
-        <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-xl p-4 flex items-center justify-center">
-          <div className="w-full max-w-5xl h-[90vh] bg-[#0d1117] rounded-[2.5rem] border border-white/10 flex flex-col overflow-hidden shadow-2xl">
-            
-            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-black/20">
+  return (
+    <div className="h-screen bg-[#0a0f1a] flex flex-col overflow-hidden">
+      <header className="p-4 flex items-center gap-6 border-b border-white/5">
+        <button onClick={() => setView('map')} className="text-zinc-500 hover:text-white p-2 bg-white/5 rounded-xl">
+          <X className="w-8 h-8"/>
+        </button>
+        <div className="flex-1 h-3 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${((currentLessonIdx + 1) / 5) * 100}%` }} />
+        </div>
+        <div className="px-4 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full font-black text-yellow-500 text-sm italic">
+            {xp} XP
+        </div>
+      </header>
+
+      <main className="flex-1 flex flex-col p-6 max-w-5xl mx-auto w-full overflow-hidden">
+        <h2 className="text-2xl md:text-4xl font-black mb-6 text-white italic uppercase tracking-tighter leading-tight">
+          {currentLesson.task}
+        </h2>
+        
+        <div className="flex-1 bg-black rounded-[40px] border border-white/10 overflow-hidden flex flex-col relative shadow-2xl">
+          <div className="flex-1 pt-4">
+            <Editor 
+              height="100%" 
+              language="python" 
+              theme="vs-dark" 
+              value={code} 
+              onChange={(v) => setCode(v || "")}
+              options={{ 
+                fontSize: 18, 
+                fontFamily: "JetBrains Mono", 
+                minimap: { enabled: false },
+                lineNumbers: "on",
+                padding: { top: 20 },
+                scrollBeyondLastLine: false,
+              }} 
+            />
+          </div>
+
+          <div className={`p-8 border-t border-white/5 transition-all duration-300 ${
+            status === 'success' ? 'bg-emerald-900/40' : 
+            status === 'error' ? 'bg-red-900/40' : 'bg-[#111827]/80'
+          }`}>
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               <div className="flex items-center gap-4">
-                <button onClick={() => setShowIDE(false)} className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-colors"><X size={20} /></button>
-                <select 
-                  value={selectedLang} 
-                  onChange={(e) => { 
-                    const lang = e.target.value as keyof typeof CODE_TEMPLATES;
-                    setSelectedLang(lang); 
-                    setCode(CODE_TEMPLATES[lang]); 
-                    setOutput([]); 
-                  }}
-                  className="bg-zinc-900 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-white/10 text-cyan-400 outline-none cursor-pointer"
-                >
-                  <option value="c">Langage C (GCC)</option>
-                  <option value="python">Python 3</option>
-                  <option value="javascript">JavaScript</option>
-                </select>
-              </div>
-              <button 
-                onClick={() => executeEngine(0)}
-                className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all active:scale-95"
-              >
-                <Play size={14} fill="black" /> Run Code
-              </button>
-            </div>
-
-            <div className="flex-1 min-h-0">
-              <Editor 
-                height="100%" 
-                language={selectedLang === "c" ? "cpp" : selectedLang} 
-                theme="vs-dark" 
-                value={code}
-                onChange={(val) => setCode(val || "")}
-                options={{ fontSize: 16, minimap: { enabled: false }, padding: { top: 20 }, scrollBeyondLastLine: false }}
-              />
-            </div>
-
-            <div className="h-48 bg-black border-t border-white/10 p-5 font-mono text-xs overflow-y-auto">
-              <div className="flex items-center gap-2 text-slate-500 font-black uppercase text-[9px] mb-3 tracking-[0.2em]"><Terminal size={12}/> Console Output</div>
-              <div className="space-y-2">
-                {output.length === 0 && <div className="text-slate-700 italic">Prêt pour l'exécution...</div>}
-                {output.map((line, i) => (
-                  <div key={i} className={`flex items-start gap-2 ${line.type === 'error' ? 'text-red-500 font-bold' : line.type === 'result' ? 'text-emerald-400' : line.type === 'input' ? 'text-cyan-400' : 'text-slate-500 italic'}`}>
-                    <span className="whitespace-pre-wrap">{line.msg}</span>
-                  </div>
-                ))}
-                {isWaitingForInput && (
-                  <form onSubmit={handleInputSubmit} className="flex items-center gap-2">
-                    <ChevronRight size={14} className="text-emerald-500 animate-pulse" />
-                    <input 
-                        autoFocus 
-                        className="bg-transparent border-b border-emerald-900 outline-none flex-1 text-white" 
-                        value={inputValue} 
-                        onChange={(e) => setInputValue(e.target.value)} 
-                    />
-                  </form>
+                {status === 'success' ? (
+                  <CheckCircle2 className="text-emerald-400 w-10 h-10" />
+                ) : status === 'error' ? (
+                  <XCircle className="text-red-400 w-10 h-10" />
+                ) : (
+                  <Activity className="text-zinc-600 w-10 h-10" />
                 )}
+                <div>
+                  <h3 className={`font-black uppercase text-sm tracking-widest italic ${status === 'success' ? 'text-emerald-400' : status === 'error' ? 'text-red-400' : 'text-zinc-500'}`}>
+                    {status === 'success' ? 'Mission Réussie' : status === 'error' ? 'Échec de Compilation' : 'En attente de code...'}
+                  </h3>
+                  {status === 'error' && (
+                    <p className="text-[10px] text-red-300/60 font-bold uppercase mt-1">Reçu: "{errorDetails.received}" | Attendu: "{errorDetails.expected}"</p>
+                  )}
+                </div>
               </div>
+              
+              <button 
+                disabled={status === 'running'}
+                onClick={status === 'success' ? () => setView('map') : checkCode}
+                className={`w-full md:w-auto px-16 py-5 rounded-[24px] font-black uppercase text-xs tracking-widest border-b-[6px] transition-all active:translate-y-1 active:border-b-0 disabled:opacity-50
+                  ${status === 'success' ? 'bg-emerald-500 border-emerald-700 text-white' : 
+                    status === 'error' ? 'bg-red-500 border-red-700 text-white' : 'bg-cyan-500 border-cyan-700 text-white'}`}
+              >
+                {status === 'running' ? "Exécution..." : status === 'success' ? "Continuer" : "Vérifier Code"}
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </main>
     </div>
   );
 }

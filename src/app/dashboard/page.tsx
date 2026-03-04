@@ -1,45 +1,140 @@
 "use client";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { LayoutDashboard, BookOpen, Trophy, Target, Zap, Clock, ChevronRight, Star } from "lucide-react";
+import { LayoutDashboard, BookOpen, Trophy, Target, Zap, Clock, ChevronRight, Star, Activity } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase"; // Import du client Supabase
 
 export default function DashboardPage() {
-  // STATS RÉINITIALISÉES À 0 - COULEUR ACCENT : #22d3ee
+  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
+  const [progression, setProgression] = useState({
+    xp: 0,
+    lessonsCompleted: 0,
+    badges: 0
+  });
+
+  // --- SYNC LOGIC AVEC SUPABASE ---
+  useEffect(() => {
+    async function getProfileData() {
+      try {
+        // 1. Récupérer l'utilisateur connecté
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // 2. Récupérer les données de la table 'profile' (singulier comme demandé)
+          const { data, error } = await supabase
+            .from('profile')
+            .select('xp, completed_lessons')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (data) {
+            const lessonsCount = data.completed_lessons ? data.completed_lessons.length : 0;
+            setProgression({
+              xp: data.xp || 0,
+              lessonsCompleted: lessonsCount,
+              badgeCount: Math.floor(lessonsCount / 5) // 1 badge par chapitre (5 leçons)
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Erreur de synchronisation :", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    getProfileData();
+  }, []);
+  // --- SYNC LOGIC END ---
+
   const stats = [
-    { label: "Cours terminés", value: "0", icon: <BookOpen className="text-cyan-400" />, color: "bg-cyan-400/10" },
-    { label: "Points d'XP", value: "0", icon: <Zap className="text-slate-500" />, color: "bg-slate-500/10" },
-    { label: "Badges acquis", value: "0", icon: <Trophy className="text-slate-500" />, color: "bg-slate-500/10" },
-    { label: "Heures de focus", value: "0h", icon: <Clock className="text-emerald-500" />, color: "bg-emerald-500/10" },
+    { 
+      label: "Cours terminés", 
+      value: progression.lessonsCompleted.toString(), 
+      icon: <BookOpen className={progression.lessonsCompleted > 0 ? "text-cyan-400" : "text-slate-400"} />, 
+      color: progression.lessonsCompleted > 0 ? "bg-cyan-400/10" : "bg-slate-500/10" 
+    },
+    { 
+      label: "Points d'XP", 
+      value: progression.xp.toString(), 
+      icon: <Zap className={progression.xp > 0 ? "text-yellow-400" : "text-slate-400"} />, 
+      color: progression.xp > 0 ? "bg-yellow-400/10" : "bg-slate-500/10" 
+    },
+    { 
+      label: "Badges acquis", 
+      value: (Math.floor(progression.lessonsCompleted / 5)).toString(), 
+      icon: <Trophy className={progression.lessonsCompleted >= 5 ? "text-orange-400" : "text-slate-400"} />, 
+      color: progression.lessonsCompleted >= 5 ? "bg-orange-500/10" : "bg-slate-500/10" 
+    },
+    { 
+      label: "Heures de focus", 
+      value: "0h", 
+      icon: <Clock className="text-emerald-500" />, 
+      color: "bg-emerald-500/10" 
+    },
   ];
 
+  const level = Math.floor(progression.xp / 500) + 1;
+  const progressToNextLevel = (progression.xp % 500) / 5; 
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#060a13] flex items-center justify-center">
+        <Activity className="text-cyan-400 animate-pulse" size={40} />
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-[#0a0f1a] text-white p-6 pt-24 selection:bg-cyan-500/30">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#060a13] text-white p-6 pt-24 selection:bg-cyan-500/30 overflow-hidden relative">
+      
+      {/* EFFET DE FOND VIVANT */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/5 blur-[120px] rounded-full animate-pulse delay-700" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         
         {/* HEADER DYNAMIQUE */}
         <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-4xl font-black tracking-tighter italic uppercase">Dashboard <span className="text-cyan-400">Elite</span></h1>
-            <p className="text-slate-500 text-sm mt-1 uppercase tracking-widest font-mono text-[10px]">
-                 <span className="text-white font-bold"></span>
-            </p>
-          </div>
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-[1px] w-8 bg-cyan-400" />
+              <span className="text-cyan-400 font-mono text-[9px] tracking-[0.4em] uppercase">
+                Status: {progression.lessonsCompleted > 0 ? "Actif" : "Inactif"}
+              </span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter italic uppercase leading-none text-white">
+              Dashboard <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Elite</span>
+            </h1>
+          </motion.div>
           
-          {/* NIVEAU RÉINITIALISÉ */}
-          <div className="flex items-center gap-4 bg-slate-900/50 p-2 rounded-2xl border border-white/5 shadow-2xl">
-            <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center font-black text-cyan-400 border border-white/5">
-              ?
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-4 bg-white/[0.03] backdrop-blur-md p-3 rounded-2xl border border-white/5 shadow-2xl relative overflow-hidden group"
+          >
+            <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center font-black text-cyan-400 border border-white/10">
+              {level}
             </div>
             <div className="pr-4">
-              <p className="text-[10px] font-black uppercase tracking-tighter text-slate-500">Niveau 1</p>
-              <div className="w-24 h-1.5 bg-slate-800 rounded-full mt-1 overflow-hidden">
-                <div className="h-full bg-cyan-400 w-0 rounded-full transition-all duration-1000" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                Niveau <Activity size={10} className="text-cyan-400 animate-pulse" />
+              </p>
+              <div className="w-32 h-1.5 bg-slate-800/50 rounded-full mt-1.5 overflow-hidden border border-white/5">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progressToNextLevel}%` }}
+                  className="h-full bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-full" 
+                />
               </div>
             </div>
-          </div>
+          </motion.div>
         </header>
 
-        {/* GRID DE STATS À 0 */}
+        {/* GRID DE STATS SYNCHRONISÉE */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {stats.map((stat, i) => (
             <motion.div 
@@ -47,13 +142,13 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl group hover:border-cyan-400/20 transition-all"
+              className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl relative overflow-hidden group cursor-default"
             >
-              <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110`}>
+              <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center mb-4 relative z-10 transition-all`}>
                 {stat.icon}
               </div>
-              <p className="text-2xl font-black italic">{stat.value}</p>
-              <p className="text-[9px] text-slate-500 uppercase font-black tracking-[0.2em]">{stat.label}</p>
+              <p className="text-3xl font-black italic relative z-10 tracking-tighter">{stat.value}</p>
+              <p className="text-[9px] text-slate-500 uppercase font-black tracking-[0.2em] relative z-10">{stat.label}</p>
             </motion.div>
           ))}
         </div>
@@ -62,49 +157,79 @@ export default function DashboardPage() {
           
           {/* SECTION : FORMATION INITIALE */}
           <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-sm font-black flex items-center gap-2 italic uppercase tracking-widest text-cyan-400">
-              <Target size={16} /> Objectif Recommandé
+            <h2 className="text-xs font-black flex items-center gap-3 italic uppercase tracking-[0.3em] text-cyan-400/80">
+              <Target size={14} className="animate-spin-slow" /> Mission Prioritaire
             </h2>
-            <div className="relative group overflow-hidden rounded-[2.5rem] border border-white/5 bg-[#111827] p-8 flex flex-col md:flex-row gap-8 items-center transition-all hover:bg-slate-900/50">
-              <div className="w-full md:w-48 aspect-video bg-slate-900 rounded-2xl flex items-center justify-center border border-white/5">
-                <BookOpen size={32} className="text-slate-700" />
+            <motion.div className="relative group overflow-hidden rounded-[2.5rem] border border-white/5 bg-[#0d1424] p-8 flex flex-col md:flex-row gap-8 items-center transition-all shadow-2xl">
+              <div className="w-full md:w-56 aspect-video bg-slate-900/50 rounded-2xl flex items-center justify-center border border-white/5 relative overflow-hidden">
+                <BookOpen size={40} className={progression.lessonsCompleted > 0 ? "text-cyan-500/40" : "text-slate-800"} />
               </div>
-              <div className="flex-1 text-center md:text-left">
-                <h3 className="text-xl font-black mb-2 leading-tight text-white uppercase italic">Commencer le cursus</h3>
-                <p className="text-slate-500 text-xs mb-6 font-medium">Aucune progression détectée. Lancez votre première leçon pour activer vos statistiques.</p>
-                <Link href="/courses">
-                  <button className="bg-white text-black hover:bg-cyan-400 hover:text-[#0a0f1a] px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-xl">
-                    Explorer les cours
-                  </button>
+
+              <div className="flex-1 text-center md:text-left relative">
+                <h3 className="text-2xl font-black mb-3 leading-tight text-white uppercase italic tracking-tighter">
+                  {progression.lessonsCompleted > 0 ? "Poursuivre le cursus" : "Initialisation du cursus"}
+                </h3>
+                <p className="text-slate-400 text-xs mb-8 font-medium leading-relaxed max-w-sm">
+                  {progression.lessonsCompleted > 0 
+                    ? `Vous avez déjà validé ${progression.lessonsCompleted} étapes. Vos données sont synchronisées avec le Cloud Elite.`
+                    : "Le système est prêt. Branchez-vous au flux de connaissances pour débloquer votre plein potentiel."}
+                </p>
+                <Link href="/lab"> 
+                  <motion.button 
+                    whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(34,211,238,0.4)" }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-cyan-400 text-[#060a13] px-10 py-4 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center gap-3 mx-auto md:mx-0"
+                  >
+                    {progression.lessonsCompleted > 0 ? "Continuer" : "Démarrer maintenant"} <ChevronRight size={16} />
+                  </motion.button>
                 </Link>
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* SECTION : BADGES VIERGES */}
+          {/* SECTION : ARSENAL (Synchronisée) */}
           <div className="space-y-6">
-            <h2 className="text-sm font-black italic flex items-center gap-2 uppercase tracking-widest text-slate-500">
-              <Star size={16} /> Récompenses
+            <h2 className="text-xs font-black italic flex items-center gap-3 uppercase tracking-[0.3em] text-slate-500">
+              <Star size={14} /> Arsenal
             </h2>
-            <div className="bg-[#111827] border border-white/5 rounded-[2.5rem] p-8">
-               <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#0d1424] border border-white/5 rounded-[2.5rem] p-10 relative overflow-hidden">
+               <div className="grid grid-cols-2 gap-6 relative z-10">
                  {[1, 2, 3, 4].map((i) => (
-                   <div key={i} className="flex flex-col items-center group">
-                      <div className="w-14 h-14 bg-slate-900 rounded-full border border-dashed border-white/10 flex items-center justify-center mb-2 grayscale opacity-40 group-hover:opacity-100 transition-all">
-                        <Trophy size={20} className="text-slate-700" />
+                   <div key={i} className="flex flex-col items-center">
+                      <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mb-3 transition-all ${
+                        progression.lessonsCompleted >= (i * 5) 
+                        ? "bg-cyan-500/20 border-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.2)]" 
+                        : "bg-slate-900/80 border-dashed border-white/10 grayscale opacity-30"
+                      }`}>
+                        <Trophy size={24} className={progression.lessonsCompleted >= (i * 5) ? "text-cyan-400" : "text-slate-600"} />
                       </div>
-                      <p className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">Verrouillé</p>
+                      <div className={`h-1 w-4 rounded-full ${progression.lessonsCompleted >= (i * 5) ? "bg-cyan-500" : "bg-slate-800"}`} />
                    </div>
                  ))}
                </div>
-               <p className="text-center text-[9px] text-slate-700 font-bold uppercase tracking-widest mt-8 italic">
-                 // Accomplissez des défis pour débloquer
-               </p>
+               
+               <div className="mt-10 pt-8 border-t border-white/5 text-center">
+                 <p className="text-[9px] text-slate-600 font-black uppercase tracking-[0.3em] italic">
+                   {progression.lessonsCompleted >= 5 
+                    ? `// ${Math.floor(progression.lessonsCompleted / 5)} BADGE(S) RÉCUPÉRÉ(S)` 
+                    : "// En attente de données cloud"}
+                 </p>
+               </div>
             </div>
           </div>
 
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes scan {
+          0% { transform: translateY(-100%) scaleX(0.5); opacity: 0; }
+          50% { opacity: 1; }
+          100% { transform: translateY(500%) scaleX(1); opacity: 0; }
+        }
+        .animate-scan { animation: scan 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .animate-spin-slow { animation: spin 8s linear infinite; }
+      `}</style>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import { createClient} from "@/utils/supabase";
-import { Mail, Lock, ArrowRight, Loader2, ShieldCheck, KeyRound } from "lucide-react";
+import { createClient } from "@/utils/supabase";
+import { Mail, Lock, ArrowRight, Loader2, ShieldCheck, KeyRound, Check } from "lucide-react";
 import Link from "next/link";
 
 export default function SignUpPage() {
@@ -10,8 +10,11 @@ export default function SignUpPage() {
     lastName: "",
     email: "",
     password: "",
-    accessKey: "", // Champ vide par défaut
+    accessKey: "",
   });
+  
+  // État pour la validation des termes
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,13 +22,20 @@ export default function SignUpPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Vérification avant de lancer l'opération
+    if (!acceptedTerms) {
+      setError("VOUS DEVEZ ACCEPTER LES CONDITIONS POUR REJOINDRE L'INTERFACE.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
     try {
       const cleanKey = formData.accessKey.toUpperCase().trim();
 
-      // 1. Vérification de la clé dans la table access_keys
+      // 1. Vérification de la clé d'accès
       const { data: keyData, error: keyError } = await supabase
         .from("access_keys")
         .select("*")
@@ -37,7 +47,7 @@ export default function SignUpPage() {
         throw new Error("Clé d'accès invalide ou quota atteint.");
       }
 
-      // 2. Création du compte utilisateur
+      // 2. Création du compte avec le flag de consentement
       const { data, error: signupError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -46,16 +56,17 @@ export default function SignUpPage() {
             first_name: formData.firstName,
             last_name: formData.lastName,
             full_name: `${formData.firstName} ${formData.lastName}`,
+            terms_accepted: true, // <--- Envoi du checkpoint au script SQL
           },
         },
       });
 
       if (signupError) throw signupError;
 
-      // 3. Mise à jour du compteur d'utilisations de la clé
+      // 3. Incrémenter l'usage de la clé
       await supabase
         .from("access_keys")
-        .update({ current_uses: keyData.current_uses + 1 })
+        .update({ current_uses: (keyData.current_uses || 0) + 1 })
         .eq("id", keyData.id);
 
       window.location.href = `/verify?email=${encodeURIComponent(formData.email)}`;
@@ -86,7 +97,7 @@ export default function SignUpPage() {
 
           <form onSubmit={handleSignUp} className="space-y-6">
             
-            {/* CHAMP CLÉ D'ACCÈS REQUISE (Vide avec icône) */}
+            {/* CHAMP CLÉ D'ACCÈS */}
             <div className="space-y-2">
               <label className="text-[11px] font-black uppercase tracking-[0.2em] text-[#22d3ee] ml-4 italic">
                 Clé d'accès requise
@@ -94,8 +105,7 @@ export default function SignUpPage() {
               <div className="relative group">
                 <KeyRound className="absolute left-6 top-1/2 -translate-y-1/2 text-[#22d3ee]/40 group-focus-within:text-[#22d3ee] transition-colors" size={20} />
                 <input 
-                  type="text" 
-                  required 
+                  type="text" required 
                   value={formData.accessKey}
                   className="w-full bg-[#22d3ee]/5 border border-[#22d3ee]/20 rounded-[1.5rem] py-5 pl-14 pr-6 outline-none focus:border-[#22d3ee] text-sm transition-all text-white font-mono placeholder:text-slate-700 uppercase"
                   placeholder="XXXXX"
@@ -107,20 +117,18 @@ export default function SignUpPage() {
             {/* PRÉNOM & NOM */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Prénom</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 text-xs">Prénom</label>
                 <input 
                   type="text" required 
-                  value={formData.firstName}
-                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 px-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all text-white"
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 px-6 outline-none focus:border-[#22d3ee]/50 text-sm text-white"
                   onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Nom</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 text-xs">Nom</label>
                 <input 
                   type="text" required 
-                  value={formData.lastName}
-                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 px-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all text-white"
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 px-6 outline-none focus:border-[#22d3ee]/50 text-sm text-white"
                   onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                 />
               </div>
@@ -128,13 +136,12 @@ export default function SignUpPage() {
 
             {/* EMAIL */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Adresse Email</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 text-xs">Email</label>
               <div className="relative">
                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
                 <input 
                   type="email" required 
-                  value={formData.email}
-                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all text-white"
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm text-white"
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
               </div>
@@ -142,16 +149,28 @@ export default function SignUpPage() {
 
             {/* MOT DE PASSE */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4">Mot de passe</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-4 text-xs">Mot de passe</label>
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
                 <input 
                   type="password" required minLength={6}
-                  value={formData.password}
-                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm transition-all text-white"
+                  className="w-full bg-[#0a0f1a]/50 border border-white/5 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-[#22d3ee]/50 text-sm text-white"
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                 />
               </div>
+            </div>
+
+            {/* --- CHECKPOINT DES TERMES (NOUVEAU) --- */}
+            <div 
+              onClick={() => setAcceptedTerms(!acceptedTerms)}
+              className="flex items-start gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] cursor-pointer transition-all group"
+            >
+              <div className={`mt-1 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${acceptedTerms ? 'bg-[#22d3ee] border-[#22d3ee]' : 'border-slate-600 bg-transparent'}`}>
+                {acceptedTerms && <Check size={14} className="text-[#0a0f1a] font-bold" />}
+              </div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                J'accepte les <Link href="/terms" className="text-[#22d3ee] underline italic hover:text-white transition-colors">Conditions Générales d'Utilisation</Link> du forum EliteClass et m'engage à respecter le code de conduite.
+              </p>
             </div>
 
             {error && (
