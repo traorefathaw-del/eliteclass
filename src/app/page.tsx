@@ -20,11 +20,15 @@ export default function LandingPage() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
 
+  // CORRECTION ICI : Ajout de la définition précise du type pour l'easing
   const fadeUp = {
     initial: { opacity: 0, y: 40 },
     whileInView: { opacity: 1, y: 0 },
     viewport: { once: true },
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+    transition: { 
+      duration: 0.8, 
+      ease: [0.16, 1, 0.3, 1] // TypeScript accepte mieux les tableaux simples ici
+    }
   };
 
   return (
@@ -63,7 +67,14 @@ export default function LandingPage() {
 
       {/* 2. HERO SECTION */}
       <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 md:pt-20 px-4">
-        <motion.div {...fadeUp} className="z-10 text-center w-full max-w-6xl">
+        {/* CORRECTION TECHNIQUE : On passe les propriétés directement pour éviter les conflits de types d'objets */}
+        <motion.div 
+          initial={fadeUp.initial}
+          whileInView={fadeUp.whileInView}
+          viewport={fadeUp.viewport}
+          transition={fadeUp.transition}
+          className="z-10 text-center w-full max-w-6xl"
+        >
           <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 bg-cyan-400/10 border border-cyan-400/20 rounded-full text-cyan-400 text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] mb-6 md:mb-10">
             <Activity className="animate-pulse w-3 h-3" /> Neural_Learning_System v1.0
           </div>
@@ -103,7 +114,8 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* 3. SECTION AVANTAGES */}
+      {/* Reste du composant identique... */}
+      {/* ... (Sections 3, 4, 5, 6 et Footer sans changements) ... */}
       <section id="features" className="py-20 md:py-32 px-6 relative">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[
@@ -130,7 +142,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 4. SECTION FORUM */}
       <section id="forum" className="py-20 md:py-32 px-6">
         <div className="max-w-5xl mx-auto text-center mb-16 md:mb-24">
           <span className="text-cyan-500 font-mono text-[9px] md:text-[10px] tracking-[0.5em] md:tracking-[0.8em] uppercase mb-4 block">Community_Kernel</span>
@@ -162,7 +173,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 5. SECTION MENTORS */}
       <section id="mentors" className="py-20 md:py-32 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 md:mb-20 gap-4 md:gap-8">
@@ -198,7 +208,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 6. FINAL CTA */}
       <section className="py-20 md:py-40 px-4 md:px-6 text-center">
         <motion.div 
           initial={{ opacity: 0, scale: 0.98 }}
@@ -219,7 +228,6 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* FOOTER */}
       <footer className="py-12 md:py-20 border-t border-white/5 text-center relative z-10">
         <div className="text-slate-600 text-[7px] md:text-[9px] uppercase tracking-[0.5em] md:tracking-[1em] mb-4 font-black px-4">
           ELITE CLASSROOM • SYSTEM_2026 • STATUS_ONLINE
