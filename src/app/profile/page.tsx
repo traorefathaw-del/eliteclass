@@ -3,9 +3,13 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase";
 import { Mail, Shield, Calendar, Award, Zap, Loader2, ShieldCheck, Activity, Fingerprint, Cpu, Power } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+// 1. IMPORTATION DU TYPE USER DEPUIS LE SDK SUPABASE
+import { User } from "@supabase/supabase-js";
 
 export default function ProfilePage() {
-  const [user, setUser] = useState(null);
+  // 2. TYPAGE EXPLICITE DU STATE : <User | null>
+  // Cela autorise la variable à être nulle au début, puis à recevoir un objet User
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -33,6 +37,7 @@ export default function ProfilePage() {
     </div>
   );
 
+  // Utilisation de l'optional chaining (?.) pour éviter les erreurs si user_metadata est vide
   const firstName = user?.user_metadata?.first_name || "Utilisateur";
   const lastName = user?.user_metadata?.last_name || "Elite";
   const initials = `${firstName[0]}${lastName[0]}`.toUpperCase();
