@@ -3,26 +3,25 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { LayoutDashboard, BookOpen, Trophy, Target, Zap, Clock, ChevronRight, Star, Activity } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase"; // Import du client Supabase
+import { createClient } from "@/utils/supabase";
 
 export default function DashboardPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  
+  // CORRECTION : On utilise 'badgeCount' ici pour correspondre à la mise à jour plus bas
   const [progression, setProgression] = useState({
     xp: 0,
     lessonsCompleted: 0,
-    badges: 0
+    badgeCount: 0 
   });
 
-  // --- SYNC LOGIC AVEC SUPABASE ---
   useEffect(() => {
     async function getProfileData() {
       try {
-        // 1. Récupérer l'utilisateur connecté
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
-          // 2. Récupérer les données de la table 'profile' (singulier comme demandé)
           const { data, error } = await supabase
             .from('profile')
             .select('xp, completed_lessons')
@@ -31,10 +30,11 @@ export default function DashboardPage() {
 
           if (data) {
             const lessonsCount = data.completed_lessons ? data.completed_lessons.length : 0;
+            // La mise à jour correspond maintenant à la structure du state
             setProgression({
               xp: data.xp || 0,
               lessonsCompleted: lessonsCount,
-              badgeCount: Math.floor(lessonsCount / 5) // 1 badge par chapitre (5 leçons)
+              badgeCount: Math.floor(lessonsCount / 5) 
             });
           }
         }
@@ -47,7 +47,6 @@ export default function DashboardPage() {
 
     getProfileData();
   }, []);
-  // --- SYNC LOGIC END ---
 
   const stats = [
     { 
@@ -64,9 +63,10 @@ export default function DashboardPage() {
     },
     { 
       label: "Badges acquis", 
-      value: (Math.floor(progression.lessonsCompleted / 5)).toString(), 
-      icon: <Trophy className={progression.lessonsCompleted >= 5 ? "text-orange-400" : "text-slate-400"} />, 
-      color: progression.lessonsCompleted >= 5 ? "bg-orange-500/10" : "bg-slate-500/10" 
+      // CORRECTION : Utilisation de progression.badgeCount directement
+      value: progression.badgeCount.toString(), 
+      icon: <Trophy className={progression.badgeCount > 0 ? "text-orange-400" : "text-slate-400"} />, 
+      color: progression.badgeCount > 0 ? "bg-orange-500/10" : "bg-slate-500/10" 
     },
     { 
       label: "Heures de focus", 
@@ -87,8 +87,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#060a13] text-white p-6 pt-24 selection:bg-cyan-500/30 overflow-hidden relative">
-      
-      {/* EFFET DE FOND VIVANT */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-500/10 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-600/5 blur-[120px] rounded-full animate-pulse delay-700" />
@@ -96,8 +94,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        
-        {/* HEADER DYNAMIQUE */}
         <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
             <div className="flex items-center gap-3 mb-2">
@@ -134,7 +130,6 @@ export default function DashboardPage() {
           </motion.div>
         </header>
 
-        {/* GRID DE STATS SYNCHRONISÉE */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
           {stats.map((stat, i) => (
             <motion.div 
@@ -154,8 +149,6 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* SECTION : FORMATION INITIALE */}
           <div className="lg:col-span-2 space-y-6">
             <h2 className="text-xs font-black flex items-center gap-3 italic uppercase tracking-[0.3em] text-cyan-400/80">
               <Target size={14} className="animate-spin-slow" /> Mission Prioritaire
@@ -187,7 +180,6 @@ export default function DashboardPage() {
             </motion.div>
           </div>
 
-          {/* SECTION : ARSENAL (Synchronisée) */}
           <div className="space-y-6">
             <h2 className="text-xs font-black italic flex items-center gap-3 uppercase tracking-[0.3em] text-slate-500">
               <Star size={14} /> Arsenal
@@ -210,14 +202,13 @@ export default function DashboardPage() {
                
                <div className="mt-10 pt-8 border-t border-white/5 text-center">
                  <p className="text-[9px] text-slate-600 font-black uppercase tracking-[0.3em] italic">
-                   {progression.lessonsCompleted >= 5 
-                    ? `// ${Math.floor(progression.lessonsCompleted / 5)} BADGE(S) RÉCUPÉRÉ(S)` 
+                   {progression.badgeCount > 0 
+                    ? `// ${progression.badgeCount} BADGE(S) RÉCUPÉRÉ(S)` 
                     : "// En attente de données cloud"}
                  </p>
                </div>
             </div>
           </div>
-
         </div>
       </div>
 
