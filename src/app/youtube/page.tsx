@@ -10,28 +10,37 @@ import { motion, AnimatePresence } from "framer-motion";
 // Note: Pense à utiliser une variable d'environnement pour la clé API en production
 const YOUTUBE_API_KEY = "AIzaSyAIk3hiGqaNKbW7YI0gmYXOaamt0oozacA";
 
+// Interface pour typer nos objets vidéo
+interface YouTubeVideo {
+  id: string;
+  title: string;
+  channel: string;
+  thumbnail: string;
+}
+
 export default function YouTubePremiumStudio() {
   const [query, setQuery] = useState("");
-  const [videos, setVideos] = useState([]);
-  const [activeVideo, setActiveVideo] = useState(null);
-  const [history, setHistory] = useState([]);
+  const [videos, setVideos] = useState<YouTubeVideo[]>([]);
+  const [activeVideo, setActiveVideo] = useState<YouTubeVideo | null>(null);
+  
+  // CORRECTION : On précise que c'est un tableau de strings pour éviter l'erreur 'never[]'
+  const [history, setHistory] = useState<string[]>([]);
+  
   const [isCinemaMode, setIsCinemaMode] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   
-  const searchRef = useRef(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("yt_history");
     if (saved) setHistory(JSON.parse(saved));
 
-    // CORRECTION : Ajout du type MouseEvent pour l'argument 'event'
+    // CORRECTION : Typage explicite de l'événement 'MouseEvent'
     const handleClickOutside = (event: MouseEvent) => {
-      // Ajout de 'as Node' pour que TypeScript comprenne que l'élément est une partie du DOM
-      if (searchRef.current && !(searchRef.current as any).contains(event.target as Node)) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsSearchFocused(false);
       }
     };
-    
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -46,7 +55,7 @@ export default function YouTubePremiumStudio() {
       );
       const data = await res.json();
       if (data.items) {
-        const formatted = data.items.map((item: any) => ({
+        const formatted: YouTubeVideo[] = data.items.map((item: any) => ({
           id: item.id.videoId,
           title: item.snippet.title,
           channel: item.snippet.channelTitle,
@@ -120,14 +129,14 @@ export default function YouTubePremiumStudio() {
           {activeVideo ? (
             <div className="space-y-6">
               <div className={`w-full rounded-2xl md:rounded-[2rem] overflow-hidden shadow-2xl border border-white/5 bg-black transition-all duration-500 ${isCinemaMode ? 'aspect-[21/9]' : 'aspect-video'}`}>
-                <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${(activeVideo as any).id}?autoplay=1`} allowFullScreen />
+                <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${activeVideo.id}?autoplay=1`} allowFullScreen />
               </div>
               <div className="flex justify-between items-start px-2">
                 <div className="max-w-[80%]">
-                  <h2 className="text-lg md:text-xl font-bold text-white mb-2 leading-snug" dangerouslySetInnerHTML={{__html: (activeVideo as any).title}} />
-                  <span className="inline-block px-3 py-1 bg-white/5 text-slate-400 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest">{(activeVideo as any).channel}</span>
+                  <h2 className="text-lg md:text-xl font-bold text-white mb-2 leading-snug" dangerouslySetInnerHTML={{__html: activeVideo.title}} />
+                  <span className="inline-block px-3 py-1 bg-white/5 text-slate-400 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest">{activeVideo.channel}</span>
                 </div>
-                <a href={`https://youtube.com/watch?v=${(activeVideo as any).id}`} target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl border border-white/10 text-slate-400 hover:text-white transition-all"><ExternalLink size={18} /></a>
+                <a href={`https://youtube.com/watch?v=${activeVideo.id}`} target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-xl border border-white/10 text-slate-400 hover:text-white transition-all"><ExternalLink size={18} /></a>
               </div>
             </div>
           ) : (
@@ -152,11 +161,11 @@ export default function YouTubePremiumStudio() {
             </div>
             <div className="space-y-3 lg:h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar">
               {videos.length > 0 ? (
-                videos.map((video: any) => (
+                videos.map((video) => (
                     <div 
                       key={video.id} 
                       onClick={() => { setActiveVideo(video); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                      className={`group flex gap-4 p-3 rounded-2xl cursor-pointer transition-all border border-transparent ${(activeVideo as any)?.id === video.id ? 'bg-red-600/5 border-red-600/20' : 'hover:bg-white/5'}`}
+                      className={`group flex gap-4 p-3 rounded-2xl cursor-pointer transition-all border border-transparent ${activeVideo?.id === video.id ? 'bg-red-600/5 border-red-600/20' : 'hover:bg-white/5'}`}
                     >
                       <div className="relative w-32 h-20 flex-shrink-0 rounded-xl overflow-hidden shadow-lg border border-white/5">
                         <img src={video.thumbnail} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
