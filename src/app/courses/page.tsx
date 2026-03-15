@@ -17,50 +17,68 @@ const Editor = dynamic(() => import('@monaco-editor/react'), {
 const CHAPTERS = [
   {
     id: "ch1",
-    title: "Chapitre 1 : Les Variables & Types",
-    color: "bg-emerald-600",
-    lessons: [
-      { id: "l1_1", title: "L'Assignation", task: "Crée x = 10", expected: "10", code: "x = \nprint(x)" },
-      { id: "l1_2", title: "Les Nombres", task: "Additionne 5 + 5", expected: "10", code: "total = \nprint(total)" },
-      { id: "l1_3", title: "Le Texte", task: "Crée nom = 'Elite'", expected: "Elite", code: "nom = \nprint(nom)" },
-      { id: "l1_4", title: "Concaténation", task: "Affiche 'Salut ' + nom", expected: "Salut Elite", code: "nom = 'Elite'\nprint()" },
-      { id: "l1_5", title: "🏆 Test Final 1", task: "Affiche 'Âge: 25'", expected: "Âge: 25", code: "age = 25\nprint(f'Âge: {age}')" },
-    ]
-  },
-  {
-    id: "ch2",
-    title: "Chapitre 2 : Logique & Conditions",
-    color: "bg-cyan-600",
-    lessons: [
-      { id: "l2_1", title: "Comparaison", task: "Affiche 10 > 5", expected: "True", code: "print(10 > 5)" },
-      { id: "l2_2", title: "Le IF", task: "Si x=10 affiche 'OK'", expected: "OK", code: "x = 10\nif x == 10:\n    print('OK')" },
-      { id: "l2_3", title: "Le ELSE", task: "Affiche 'Non' si x=5 est différent de 10", expected: "Non", code: "x = 5\nif x == 10:\n    print('Oui')\nelse:\n    print('Non')" },
-      { id: "l2_4", title: "ELIF", task: "Teste si x est 0", expected: "Zéro", code: "x = 0\nif x > 0:\n    print('Positif')\nelif x == 0:\n    print('Zéro')" },
-      { id: "l2_5", title: "🏆 Test Final 2", task: "Vérifie si age=18 est majeur", expected: "Majeur", code: "age = 18\nif age >= 18:\n    print('Majeur')" },
-    ]
-  },
-  {
-    id: "ch3",
-    title: "Chapitre 3 : Listes & Boucles",
+    title: "Chapitre 1 : Les Calculs",
     color: "bg-indigo-600",
     lessons: [
-      { id: "l3_1", title: "Création Liste", task: "Crée L = [1, 2]", expected: "[1, 2]", code: "L = [1, 2]\nprint(L)" },
-      { id: "l3_2", title: "Accès Index", task: "Affiche le 1er de [10, 20]", expected: "10", code: "L = [10, 20]\nprint(L[0])" },
-      { id: "l3_3", title: "Boucle FOR", task: "Affiche 0, 1, 2", expected: "0\n1\n2", code: "for i in range(3):\n    print(i)" },
-      { id: "l3_4", title: "Parcourir Liste", task: "Affiche chaque fruit", expected: "pomme\nbanane", code: "fruits = ['pomme', 'banane']\nfor f in fruits:\n    print(f)" },
-      { id: "l3_5", title: "🏆 Test Final 3", task: "Somme de [1, 2, 3]", expected: "6", code: "L = [1, 2, 3]\nprint(sum(L))" },
+      { id: "l1_1", title: "La Soustraction", task: "cree 2 variables et soustrait les pour obtenir 10 ", expected: "10", },
+      { id: "l1_2", title: "L'Addition ", task: "cree 2 variables et additionne les pour obtenir 80.", expected: "80", },
+      { id: "l1_3", title: "La Division", task: "cree 2 variables et divise les pour obtenir 6.", expected: "6.0", },
+      { id: "l1_4", title: "le Modulo", task: "trouve le module de 20 par 3", expected: "2", },
+      { id: "l1_5", title: "🏆 Test Final 1", task: "Cree une variable de 50, soustrait 10, puis affiche le modulo de ce resultat par 3", expected: "1", },
+    ]
+  },
+  
+  
+  {
+  	id: "ch2",
+    title: "Chapitre 2 : Les Variables & Types",
+    color: "bg-emerald-600",
+    lessons: [
+      { id: "l2_1", title: "L'Assignation", task: "cree une varialble nommée score et donne lui une valeur de 100 ", expected: "100", },
+      { id: "l2_2", title: "le type float", task: "cree  variable prix égale à 19.99 et affiche la", expected: "19.99", },
+      { id: "l2_3", title: "Le Texte", task: "cree un speudo avec le texte 'ELITE123' et affiche la", expected: "ELITE123", },
+      { id: "l2_4", title: "Concaténation", task: "Affiche le texte 'Bravo' collé à la variable speudo 'ELITE123' ", expected: "Bravo ELITE123", },
+      { id: "l2_5", title: "🏆 Test Final 2", task: "cree une variable 'alex' et une variable nommé niveau et donne lui une valeur de 10 et affiche le tout", expected: "Alex est de niveau 10", },
+    ]
+  },
+  
+  
+  {
+    id: "ch3",
+    title: "Chapitre 3 : Logique & Conditions",
+    color: "bg-cyan-600",
+    lessons: [
+      { id: "l3_1", title: "Comparaison", task: "Affiche si 15 est plus grand que 10 (15 > 10)", expected: "True", },
+      { id: "l3_2", title: "Le IF", task: "Si x=10 affiche 'OK'", expected: "OK", },
+      { id: "l3_3", title: "Le ELSE", task: "Cree x = 5. Si x est egal a 10 affiche 'OUI', sinon affiche 'NON'", expected: "Non",},
+      { id: "l3_4", title: "ELIF", task: "Affiche (5 > 2) and (10 < 20)", expected: "True",  },
+      { id: "l3_5", title: "🏆 Test Final 3", task: "Cree pv = 0. Si pv <= 0 affiche 'Game Over', sinon affiche 'Vivant'", expected: "Game Over",  },
+    ]
+  },
+    
+  
+  {
+    id: "ch4",
+    title: "Chapitre 4 : Listes & Boucles",
+    color: "bg-indigo-600",
+    lessons: [
+      { id: "l4_1", title: "Création Liste", task: "Crée  une liste et affiche 1,2 dans cette liste ", expected: "[1, 2]",  },
+      { id: "l4_2", title: "Accès Index", task: "Affiche le 1er element la liste [10, 20]", expected: "10",  },
+      { id: "l4_3", title: "Boucle FOR", task: "à l'aide d'une boucle for affiche 0, 1, 2", expected: "0\n1\n2", },
+      { id: "l4_4", title: "Parcourir Liste", task: "Affiche banane et pomme et parcours cette liste", expected: "pomme\nbanane",},
+      { id: "l4_5", title: "🏆 Test Final 4", task: "Somme d'une liste  L=[1, 2, 3]", expected: "6", },
     ]
   },
   {
-    id: "ch4",
-    title: "Chapitre 4 : Fonctions & Maîtrise",
+    id: "ch5",
+    title: "Chapitre 5 : Fonctions & Maîtrise",
     color: "bg-purple-600",
     lessons: [
-      { id: "l4_1", title: "Définition", task: "Crée la fonction hello()", expected: "Salut", code: "def hello():\n    print('Salut')\nhello()" },
-      { id: "l4_2", title: "Arguments", task: "Fonction double(n)", expected: "20", code: "def double(n):\n    print(n * 2)\ndouble(10)" },
-      { id: "l4_3", title: "Return", task: "Renvoie x * x", expected: "25", code: "def carre(x):\n    return x * x\nprint(carre(5))" },
-      { id: "l4_4", title: "Modules", task: "Importe math et affiche pi", expected: "3.14", code: "import math\nprint(round(math.pi, 2))" },
-      { id: "l4_5", title: "🚀 PROJET FINAL", task: "Calcul moyenne de [10, 20]", expected: "Moyenne: 15.0", code: "notes = [10, 20]\nmoy = sum(notes) / len(notes)\nprint(f'Moyenne: {moy}')" },
+      { id: "l5_1", title: "Création de fonction", task: "Crée la fonction hello() et affiche 'Salut' dans cette fonction", expected: "Salut", },
+      { id: "l5_2", title: "Arguments", task: "cree une fonction double(n) qui calcul le double de 10", expected: "20",},
+      { id: "l5_3", title: "Return", task: "cree une fonction qui renvoie unea somme de 25", expected: "25",},
+      { id: "l5_4", title: "Modules", task: "Importe math et affiche la racine carré de 16", expected: "4", },
+      { id: "l5_5", title: "🚀 PROJET FINAL", task: "Crée une fonction nommée prix_final qui prend un prix de 120 en paramètre. Si le prix est supérieur à 100, la fonction doit retourner le prix avec une réduction de 20. Sinon, elle retourne le prix normal", expected: "Moyenne: 100", },
     ]
   }
 ];

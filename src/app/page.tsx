@@ -40,7 +40,7 @@ export default function LandingPage() {
             <Terminal className="text-[#02040a] w-4 h-4 md:w-[18px] md:h-[18px]" />
           </div>
           <div className="text-lg md:text-xl font-black tracking-tighter italic uppercase">
-            ELITE<span className="text-cyan-400">CLASS</span>
+            ELITE<span className="text-cyan-400">CLASSROOM</span>
           </div>
         </div>
         
@@ -97,12 +97,8 @@ export default function LandingPage() {
               </motion.button>
             </Link>
             <div className="flex items-center gap-4 text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              <div className="flex -space-x-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-[#02040a] bg-slate-800" />
-                ))}
-              </div>
-              <span>+500 Active_Nodes</span>
+           
+              <span></span>
             </div>
           </div>
         </motion.div>
